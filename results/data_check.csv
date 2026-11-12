@@ -1,0 +1,128 @@
+source,data,cable,direction,week,status,points,resolution,mean_mw,max_mw,note
+entso-e,auction,DK1-DE,export,now,200,503,PT15M,1036.3,3175,
+entso-e,auction,DK1-DE,import,now,200,186,PT15M,878.9,2070,
+entso-e,auction,DK1-NO2,export,now,200,1,PT15M,0,0,
+entso-e,auction,DK1-NO2,import,now,200,11,PT15M,1041.3,1173,
+entso-e,auction,DK1-SE3,export,now,200,28,PT15M,282.5,673,
+entso-e,auction,DK1-SE3,import,now,200,80,PT15M,451.4,733,
+entso-e,auction,DK1-NL,export,now,200,132,PT15M,361.7,700,
+entso-e,auction,DK1-NL,import,now,200,227,PT15M,438.6,700,
+entso-e,auction,DK1-GB,export,now,200,81,PT60M,200.2,1250,
+entso-e,auction,DK1-GB,import,now,200,99,PT60M,621.1,1461,
+entso-e,auction,DK1-DK2,export,now,200,384,PT15M,339,600,
+entso-e,auction,DK1-DK2,import,now,200,4,PT15M,123,271,
+entso-e,measured,DK1-DE,export,now,200,567,PT15M,955.8,3476.24,
+entso-e,measured,DK1-DE,import,now,200,209,PT15M,616.4,2034.95,
+entso-e,measured,DK1-NO2,export,now,200,1,PT15M,0,0,
+entso-e,measured,DK1-NO2,import,now,200,665,PT15M,1086.1,1141.54,
+entso-e,measured,DK1-SE3,export,now,200,121,PT15M,352,652.468201,
+entso-e,measured,DK1-SE3,import,now,200,452,PT15M,494.7,717,
+entso-e,measured,DK1-NL,export,now,200,235,PT15M,221.2,693.65,
+entso-e,measured,DK1-NL,import,now,200,529,PT15M,434.7,698.81,
+entso-e,measured,DK1-GB,export,now,200,181,PT15M,306.9,1181.34,
+entso-e,measured,DK1-GB,import,now,200,278,PT15M,615.9,1456,
+entso-e,measured,DK1-DK2,export,now,200,543,PT15M,232,590.9,
+entso-e,measured,DK1-DK2,import,now,200,188,PT15M,119.4,581.92,
+entso-e,capacity,DK1-DE,export,now,200,1,PT15M,3500,3500,
+entso-e,capacity,DK1-DE,import,now,200,1,PT15M,3500,3500,
+entso-e,capacity,DK1-NO2,export,now,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YNO-2--------T, 10YDK-1--------W)"
+entso-e,capacity,DK1-NO2,import,now,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YNO-2--------T)"
+entso-e,capacity,DK1-SE3,export,now,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10Y1001A1001A46L, 10YDK-1--------W)"
+entso-e,capacity,DK1-SE3,import,now,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10Y1001A1001A46L)"
+entso-e,capacity,DK1-NL,export,now,200,1,PT60M,700,700,
+entso-e,capacity,DK1-NL,import,now,200,1,PT60M,700,700,
+entso-e,capacity,DK1-GB,export,now,200,1,PT60M,1456,1456,
+entso-e,capacity,DK1-GB,import,now,200,30,PT60M,708,1456,
+entso-e,capacity,DK1-DK2,export,now,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-2--------M, 10YDK-1--------W)"
+entso-e,capacity,DK1-DK2,import,now,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YDK-2--------M)"
+entso-e,auction,DK1-DE,export,y2025,200,135,PT60M,1286.8,2500,
+entso-e,auction,DK1-DE,import,y2025,200,22,PT60M,705.6,2117,
+entso-e,auction,DK1-NO2,export,y2025,200,46,PT60M,784,1680,
+entso-e,auction,DK1-NO2,import,y2025,200,24,PT60M,1019.2,1680,
+entso-e,auction,DK1-SE3,export,y2025,200,21,PT60M,327.8,695,
+entso-e,auction,DK1-SE3,import,y2025,200,74,PT60M,446.6,715,
+entso-e,auction,DK1-NL,export,y2025,200,36,PT60M,388.8,700,
+entso-e,auction,DK1-NL,import,y2025,200,34,PT60M,288,700,
+entso-e,auction,DK1-GB,export,y2025,200,32,PT60M,493.9,1000,
+entso-e,auction,DK1-GB,import,y2025,200,22,PT60M,315.9,700,
+entso-e,auction,DK1-DK2,export,y2025,200,17,PT60M,194.4,580,
+entso-e,auction,DK1-DK2,import,y2025,200,93,PT60M,394.1,600,
+entso-e,measured,DK1-DE,export,y2025,200,490,PT15M,422.7,2064.32,
+entso-e,measured,DK1-NO2,export,y2025,200,58,PT60M,699.8,1595.1275,
+entso-e,measured,DK1-SE3,export,y2025,200,26,PT60M,305.1,651.66,
+entso-e,measured,DK1-NL,export,y2025,200,122,PT60M,505.8,700.5,
+entso-e,measured,DK1-GB,export,y2025,200,46,PT60M,511.9,1412.67,
+entso-e,measured,DK1-DK2,export,y2025,200,56,PT60M,152.9,502.65,
+entso-e,capacity,DK1-DE,export,y2025,200,64,PT60M,2446.9,2500,
+entso-e,capacity,DK1-DE,import,y2025,599,0,,NA,NA,
+entso-e,capacity,DK1-NO2,export,y2025,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YNO-2--------T, 10YDK-1--------W)"
+entso-e,capacity,DK1-NO2,import,y2025,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YNO-2--------T)"
+entso-e,capacity,DK1-SE3,export,y2025,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10Y1001A1001A46L, 10YDK-1--------W)"
+entso-e,capacity,DK1-SE3,import,y2025,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10Y1001A1001A46L)"
+entso-e,capacity,DK1-NL,export,y2025,200,1,PT60M,700,700,
+entso-e,capacity,DK1-NL,import,y2025,200,1,PT60M,700,700,
+entso-e,capacity,DK1-GB,export,y2025,200,6,PT60M,642.7,1456,
+entso-e,capacity,DK1-GB,import,y2025,200,6,PT60M,659.3,1456,
+entso-e,capacity,DK1-DK2,export,y2025,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-2--------M, 10YDK-1--------W)"
+entso-e,capacity,DK1-DK2,import,y2025,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YDK-2--------M)"
+entso-e,auction,DK1-DE,export,y2024,200,129,PT60M,1383.8,2500,
+entso-e,auction,DK1-DE,import,y2024,200,32,PT60M,1334,2500,
+entso-e,auction,DK1-NO2,export,y2024,200,28,PT60M,709.7,1713,
+entso-e,auction,DK1-NO2,import,y2024,200,54,PT60M,1069.9,1713,
+entso-e,auction,DK1-SE3,export,y2024,200,30,PT60M,406.7,715,
+entso-e,auction,DK1-SE3,import,y2024,200,24,PT60M,321,715,
+entso-e,auction,DK1-NL,export,y2024,200,19,PT60M,285.7,700,
+entso-e,auction,DK1-NL,import,y2024,200,43,PT60M,326,700,
+entso-e,auction,DK1-GB,export,y2024,200,49,PT60M,297,800,
+entso-e,auction,DK1-GB,import,y2024,200,89,PT60M,390.6,800,
+entso-e,auction,DK1-DK2,export,y2024,200,111,PT60M,384.4,566,
+entso-e,auction,DK1-DK2,import,y2024,200,27,PT60M,274.7,600,
+entso-e,measured,DK1-DE,export,y2024,200,444,PT15M,1418.5,2548.8,
+entso-e,measured,DK1-NO2,export,y2024,200,60,PT60M,674.1,1567.33,
+entso-e,measured,DK1-SE3,export,y2024,200,71,PT60M,421.7,713.07,
+entso-e,measured,DK1-NL,export,y2024,200,65,PT60M,476.3,700.29,
+entso-e,measured,DK1-GB,export,y2024,200,65,PT60M,479.7,800.71,
+entso-e,measured,DK1-DK2,export,y2024,200,145,PT60M,337,574.95,
+entso-e,capacity,DK1-DE,export,y2024,200,58,PT60M,1960.2,2500,
+entso-e,capacity,DK1-DE,import,y2024,200,77,PT60M,2031.9,2500,
+entso-e,capacity,DK1-NO2,export,y2024,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YNO-2--------T, 10YDK-1--------W)"
+entso-e,capacity,DK1-NO2,import,y2024,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YNO-2--------T)"
+entso-e,capacity,DK1-SE3,export,y2024,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10Y1001A1001A46L, 10YDK-1--------W)"
+entso-e,capacity,DK1-SE3,import,y2024,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10Y1001A1001A46L)"
+entso-e,capacity,DK1-NL,export,y2024,200,1,PT60M,700,700,
+entso-e,capacity,DK1-NL,import,y2024,200,1,PT60M,700,700,
+entso-e,capacity,DK1-GB,export,y2024,200,5,PT60M,640,800,
+entso-e,capacity,DK1-GB,import,y2024,200,1,PT60M,800,800,
+entso-e,capacity,DK1-DK2,export,y2024,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-2--------M, 10YDK-1--------W)"
+entso-e,capacity,DK1-DK2,import,y2024,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YDK-2--------M)"
+entso-e,auction,DK1-DE,export,y2023,200,57,PT60M,1284.3,2260,
+entso-e,auction,DK1-DE,import,y2023,200,100,PT60M,1337.8,2500,
+entso-e,auction,DK1-NO2,export,y2023,200,44,PT60M,980.8,1680,
+entso-e,auction,DK1-NO2,import,y2023,200,22,PT60M,496.6,1143,
+entso-e,auction,DK1-SE3,export,y2023,200,23,PT60M,375.9,715,
+entso-e,auction,DK1-SE3,import,y2023,200,18,PT60M,276.1,715,
+entso-e,auction,DK1-NL,export,y2023,200,41,PT60M,410.8,700,
+entso-e,auction,DK1-NL,import,y2023,200,13,PT60M,353.8,700,
+entso-e,auction,DK1-GB,export,y2023,200,0,,NA,NA,"No matching data found for Data item COMMERCIAL_SCHEDULES [12.1.F] (10YGB----------A, 10YDK-1--------W) and interval 202"
+entso-e,auction,DK1-GB,import,y2023,200,0,,NA,NA,"No matching data found for Data item COMMERCIAL_SCHEDULES [12.1.F] (10YDK-1--------W, 10YGB----------A) and interval 202"
+entso-e,auction,DK1-DK2,export,y2023,200,30,PT60M,274.7,590,
+entso-e,auction,DK1-DK2,import,y2023,200,49,PT60M,332,600,
+entso-e,measured,DK1-DE,export,y2023,200,192,PT15M,431.3,1872,
+entso-e,measured,DK1-NO2,export,y2023,200,145,PT60M,1257.3,1611.5,
+entso-e,measured,DK1-SE3,export,y2023,200,126,PT60M,477.6,713.51,
+entso-e,measured,DK1-NL,export,y2023,200,157,PT60M,585.9,700.34,
+entso-e,measured,DK1-GB,export,y2023,200,0,,NA,NA,"No matching data found for Data item NET_CROSS_BORDER_PHYSICAL_FLOWS_R3 [12.1.G] (10YGB----------A, 10YDK-1--------W) an"
+entso-e,measured,DK1-DK2,export,y2023,200,94,PT60M,227.7,590.19,
+entso-e,capacity,DK1-DE,export,y2023,200,153,PT60M,2144.8,2380,
+entso-e,capacity,DK1-DE,import,y2023,200,15,PT60M,2455.3,2500,
+entso-e,capacity,DK1-NO2,export,y2023,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YNO-2--------T, 10YDK-1--------W)"
+entso-e,capacity,DK1-NO2,import,y2023,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YNO-2--------T)"
+entso-e,capacity,DK1-SE3,export,y2023,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10Y1001A1001A46L, 10YDK-1--------W)"
+entso-e,capacity,DK1-SE3,import,y2023,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10Y1001A1001A46L)"
+entso-e,capacity,DK1-NL,export,y2023,200,1,PT60M,700,700,
+entso-e,capacity,DK1-NL,import,y2023,200,1,PT60M,700,700,
+entso-e,capacity,DK1-GB,export,y2023,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YGB----------A, 10YDK-1--------W)"
+entso-e,capacity,DK1-GB,import,y2023,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YGB----------A)"
+entso-e,capacity,DK1-DK2,export,y2023,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-2--------M, 10YDK-1--------W)"
+entso-e,capacity,DK1-DK2,import,y2023,200,0,,NA,NA,"No matching data found for Data item FORECASTED_TRANSFER_CAPACITIES_EXPLICIT [11.1] (10YDK-1--------W, 10YDK-2--------M)"
+energi data service,"measured, settlement",NA,NA,NA,NA,NA,NA,NA,NA,"The package ""jsonlite"" is required."
