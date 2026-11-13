@@ -1,0 +1,13 @@
+cable,benchmark,days,mae_mw,bias_mw,mean_abs_flow_mw
+DK1-DE,last_week,189,1435,44.7,1949.2
+DK1-DE,yesterday,189,1261.9,26.6,1949.2
+DK1-DK2,last_week,189,301.7,-7.1,226
+DK1-DK2,yesterday,189,252.3,-5.8,226
+DK1-GB,last_week,189,835,10,877
+DK1-GB,yesterday,189,670.4,-26.2,877
+DK1-NL,last_week,189,572,19.4,514.8
+DK1-NL,yesterday,189,458.2,-9,514.8
+DK1-NO2,last_week,189,769.1,-39.7,1037.6
+DK1-NO2,yesterday,189,571,-16.7,1037.6
+DK1-SE3,last_week,189,367.1,-18.3,516.5
+DK1-SE3,yesterday,189,308.8,-7.1,516.5

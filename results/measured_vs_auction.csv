@@ -1,0 +1,6 @@
+cable,hours,mean_abs_diff_mw,mean_diff_mw
+DK1-DE,4536,675.9,-399.2
+DK1-DK2,4536,133.4,-10.2
+DK1-NL,4536,205.5,-2
+DK1-NO2,4536,116.4,11.7
+DK1-SE3,4536,72.1,30.5
