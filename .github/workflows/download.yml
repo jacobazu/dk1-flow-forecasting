@@ -1,4 +1,4 @@
-# downloads the cable flows and neighbour prices from entso-e. the data lives in the actions cache, so each run
+# downloads the cable flows and neighbour prices from entso-e, then scores the benchmarks. the data lives in the actions cache, so each run
 # only fetches the last few days; a copy is kept as a run artifact
 
 name: Download
@@ -6,7 +6,7 @@ name: Download
 on:
   push:
     branches: [main]
-    paths: ["scripts/01_download.R", ".github/workflows/download.yml"]
+    paths: ["scripts/01_download.R", "scripts/02_benchmarks.R", ".github/workflows/download.yml"]
   schedule:
     - cron: "35 13 * * *"     # after the day-ahead results are out
   workflow_dispatch:
@@ -21,7 +21,7 @@ concurrency:
 jobs:
   download:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
 
@@ -49,18 +49,34 @@ jobs:
           restore-keys: flows-v1-
 
       - name: Download
+        timeout-minutes: 280
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
         run: Rscript scripts/01_download.R
 
       - name: Save data
+        if: always()
         uses: actions/cache/save@v4
         with:
           path: data
           key: flows-v1-${{ github.run_id }}
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: flow-data
           path: data
           retention-days: 7
+
+      - name: Benchmarks
+        run: Rscript scripts/02_benchmarks.R
+
+      - name: Save results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results
+          git diff --cached --quiet && exit 0
+          git commit -m "benchmark scores"
+          for try in 1 2 3; do git pull --rebase && git push && exit 0; sleep 15; done
+          exit 1
