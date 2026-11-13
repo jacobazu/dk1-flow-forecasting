@@ -31,7 +31,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          packages: any::httr2, any::dplyr, any::readr, any::lubridate
+          packages: any::httr2, any::jsonlite, any::dplyr, any::readr, any::lubridate
           install-pandoc: false
 
       - name: Check
