@@ -3,23 +3,15 @@
 # lowest mean absolute error on the earlier tuning days (every 7th day from 1 jan 2026), which are never scored.
 # writes results/model_forecasts.csv, results/model_scores.csv, results/model_coefs.csv
 
-library(glmnet)
 source("R/inputs.R")
+source("R/model.R")
 
-first_test <- as_date("2026-01-01"); first_scored <- as_date("2026-03-01"); last_test <- as_date("2026-10-10")
-tuning <- \(d) as.integer(d - first_test) %% 7 == 0
+first_scored <- as_date("2026-03-01"); last_test <- as_date("2026-10-10")
 
 flows <- read_flows()
 d <- build(flows, read_prices(), price_forecasts(), wind_forecasts()) |>
   filter(date >= first_test, date <= last_test, !is.na(actual)) |> complete_rows()
 message("rows with every input: ", nrow(d), " (", n_distinct(d$date), " days)")
-
-fit_cable <- function(train) {
-  fit_rows <- train[!tuning(train$date), ]; tune_rows <- train[tuning(train$date), ]
-  m <- glmnet(design(fit_rows), fit_rows$actual, alpha = 1)
-  mae <- colMeans(abs(predict(m, design(tune_rows)) - tune_rows$actual))
-  list(model = m, lambda = m$lambda[which.min(mae)])
-}
 
 months <- seq(floor_date(first_scored, "month"), floor_date(last_test, "month"), by = "month")
 out <- list(); coefs <- list()
@@ -29,7 +21,7 @@ for (cb in cables) for (k in seq_along(months)) {
   test  <- d |> filter(cable == cb, date >= m0, date < m1)
   if (!nrow(test)) next
   f <- fit_cable(train)
-  out[[length(out) + 1]] <- test |> transmute(date, hour, cable, actual, model = as.numeric(predict(f$model, design(test), s = f$lambda)),
+  out[[length(out) + 1]] <- test |> transmute(date, hour, cable, actual, model = predict_cable(f, test),
                                                yesterday = flow_d1, last_week = flow_d7)
   if (k == length(months)) {
     b <- as.matrix(coef(f$model, s = f$lambda))

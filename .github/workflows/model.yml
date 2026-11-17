@@ -5,7 +5,7 @@ name: Model backtest
 on:
   push:
     branches: [main]
-    paths: ["R/inputs.R", "scripts/03_model.R", ".github/workflows/model.yml"]
+    paths: ["R/inputs.R", "R/model.R", "scripts/03_model.R", ".github/workflows/model.yml"]
   workflow_dispatch:
 
 permissions:
