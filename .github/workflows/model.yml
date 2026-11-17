@@ -1,0 +1,56 @@
+# backtests the lasso model on the data kept in the actions cache by the download workflow, and commits the scores
+
+name: Model backtest
+
+on:
+  push:
+    branches: [main]
+    paths: ["R/inputs.R", "scripts/03_model.R", ".github/workflows/model.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backtest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # github's own ubuntu mirror has been failing since late oct 2026
+      - name: Ubuntu mirrors
+        run: |
+          printf 'http://ftp.uni-stuttgart.de/ubuntu/\nhttp://mirrors.edge.kernel.org/ubuntu/\n' | sudo tee /etc/apt/apt-mirrors.txt
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\n' | sudo tee /etc/apt/apt.conf.d/99timeouts
+
+      - uses: r-lib/actions/setup-r@v2
+        timeout-minutes: 25
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: any::dplyr, any::tidyr, any::readr, any::lubridate, any::glmnet
+          install-pandoc: false
+
+      - name: Restore data
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: flows-v1-${{ github.run_id }}
+          restore-keys: flows-v1-
+          fail-on-cache-miss: true
+
+      - name: Backtest
+        run: Rscript scripts/03_model.R
+
+      - name: Save results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results
+          git diff --cached --quiet && exit 0
+          git commit -m "model backtest results"
+          for try in 1 2 3; do git pull --rebase && git push && exit 0; sleep 15; done
+          exit 1
