@@ -1,0 +1,98 @@
+# every morning before the noon auction: fetch the latest flows and prices, save tomorrow's flow forecast, rebuild the dashboard.
+# started by cron-job.org (workflow_dispatch) around 10:40 danish time; the schedule below is a backup, github's cron is often late.
+# 04_live.R saves nothing after 12:00 danish time or if tomorrow is already saved, so extra runs are harmless
+
+name: Live forecast
+
+on:
+  schedule:
+    - cron: "35 9 * * *"     # backup, after the price forecast is saved (about 09:20 utc)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: download
+  cancel-in-progress: false
+
+jobs:
+  forecast:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # github's own ubuntu mirror has been failing since late oct 2026
+      - name: Ubuntu mirrors
+        run: |
+          printf 'http://ftp.uni-stuttgart.de/ubuntu/\nhttp://mirrors.edge.kernel.org/ubuntu/\n' | sudo tee /etc/apt/apt-mirrors.txt
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\n' | sudo tee /etc/apt/apt.conf.d/99timeouts
+
+      - uses: r-lib/actions/setup-r@v2
+        timeout-minutes: 25
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: any::httr2, any::xml2, any::dplyr, any::tidyr, any::readr, any::lubridate, any::glmnet
+          install-pandoc: false
+
+      - name: Restore data
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: flows-v1-${{ github.run_id }}
+          restore-keys: flows-v1-
+          fail-on-cache-miss: true
+
+      - name: Download the last few days
+        timeout-minutes: 30
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: Rscript scripts/01_download.R
+
+      - name: Save data
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: flows-v1-${{ github.run_id }}
+
+      - name: Forecast tomorrow
+        run: Rscript scripts/04_live.R
+
+      - name: Save forecast
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add forecasts
+          git diff --cached --quiet && exit 0
+          git commit -m "live flow forecast"
+          for try in 1 2 3; do git pull --rebase && git push && exit 0; sleep 15; done
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dashboard
+        run: |
+          pip install -q pandas plotly
+          python dashboard.py
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: forecast
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
