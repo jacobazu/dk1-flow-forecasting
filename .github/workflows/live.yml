@@ -1,6 +1,6 @@
 # every morning before the noon auction: fetch the latest flows and prices, save tomorrow's flow forecast, rebuild the dashboard.
-# started by cron-job.org (workflow_dispatch) around 10:40 danish time; the schedule below is a backup, github's cron is often late.
-# 04_live.R saves nothing after 12:00 danish time or if tomorrow is already saved, so extra runs are harmless
+# started by cron-job.org (workflow_dispatch) at 10:40, 11:10 and 11:40 danish time; github's own cron is hours late, so it is
+# only a backup. 04_live.R saves nothing after 12:00 danish time or if tomorrow is already saved, so extra runs are harmless
 
 name: Live forecast
 
@@ -68,6 +68,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p forecasts
           git add forecasts
           git diff --cached --quiet && exit 0
           git commit -m "live flow forecast"
@@ -80,7 +81,7 @@ jobs:
 
       - name: Dashboard
         run: |
-          pip install -q pandas plotly
+          pip install -q pandas plotly requests
           python dashboard.py
 
       - uses: actions/upload-pages-artifact@v3
