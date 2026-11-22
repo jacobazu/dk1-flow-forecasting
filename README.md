@@ -2,7 +2,7 @@
 
 Tomorrow's net flow on each of DK1's six cables (Germany, Norway, Britain, the Netherlands, Sweden and DK2), forecast hour by hour before the noon day-ahead auction and scored once the auction result is out. Next to it: how far the measured flow strayed from the auction flow.
 
-**Dashboard: [jacobazu.github.io/dk1-flow-forecasting](https://jacobazu.github.io/dk1-flow-forecasting)**
+**Dashboard: [jacobazu.github.io/dk1-flow-forecasting](https://jacobazu.github.io/dk1-flow-forecasting)**: a map of Denmark's cables hour by hour for the last week and tomorrow, with Energinet's measured flows and generation, the auction flows and our forecast. The forecast record, backtest and method are on a second page.
 
 ## Result
 
@@ -37,6 +37,6 @@ The model passes on Germany, DK1's biggest and most price-driven link. It is clo
 | `scripts/03_model.R` | the backtest, written to `results/` |
 | `scripts/04_live.R` | tomorrow's forecast |
 | `scripts/05_backfill.R` | the backfilled days |
-| `dashboard.py` | the dashboard |
+| `dashboard.py`, `assets/` | the map and the record page |
 
-Data: ENTSO-E Transparency Platform. Measured flows on the British cable are not published there.
+Data: ENTSO-E Transparency Platform (auction flows, prices; measured flows on the British cable are not published there), Energi Data Service (Energinet's real-time generation and cable flows, for the map), Natural Earth (borders).

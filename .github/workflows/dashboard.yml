@@ -1,0 +1,53 @@
+# rebuilds the dashboard with the latest measured flows from energi data service, without fitting anything.
+# started by cron-job.org (workflow_dispatch) every hour
+
+name: Dashboard
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore data
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: flows-v1-${{ github.run_id }}
+          restore-keys: flows-v1-
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dashboard
+        run: |
+          pip install -q pandas plotly requests
+          python dashboard.py
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
