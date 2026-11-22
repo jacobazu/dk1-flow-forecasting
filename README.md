@@ -25,6 +25,7 @@ The model passes on Germany, DK1's biggest and most price-driven link. It is clo
 - **Model:** one lasso regression per cable (glmnet), refit on the first of each month on earlier days. The penalty is the one that did best on tuning days (every 7th day from 1 January), which are never scored.
 - **Test:** Diebold-Mariano on daily errors with Newey-West (7 lags), Holm correction over the six cables, p < 0.05.
 - **Live:** every morning before 12:00 Danish time the forecast for tomorrow is saved to `forecasts/flow_live.csv` and never changed.
+- **Backfilled:** the days between the backtest and the first live forecast were made afterwards by `scripts/05_backfill.R`, with only what was published before each auction and the model fit only on earlier days, as the live run would have. They are kept in `forecasts/flow_backfill.csv` and scored apart from the live record. 11 Oct to 10 Nov are missing: the price and wind forecasts they need were not both running then.
 
 ## Files
 
@@ -35,6 +36,7 @@ The model passes on Germany, DK1's biggest and most price-driven link. It is clo
 | `R/inputs.R`, `R/model.R` | features and the lasso |
 | `scripts/03_model.R` | the backtest, written to `results/` |
 | `scripts/04_live.R` | tomorrow's forecast |
+| `scripts/05_backfill.R` | the backfilled days |
 | `dashboard.py` | the dashboard |
 
 Data: ENTSO-E Transparency Platform. Measured flows on the British cable are not published there.
