@@ -3,459 +3,310 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Denmark's power flows</title>
-<meta name="description" content="Where Denmark's power comes from and where it goes, hour by hour, with tomorrow's forecast for DK1's cables.">
+<title>Northern Europe power flows</title>
+<meta name="description" content="Price, generation and the flow between Northern Europe's price areas, hour by hour, with tomorrow's forecast for DK1's cables.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
   :root {
-    --bg: #0b0c0e; --sea: #0b0c0e; --land: #15171a; --dk: #1d2024; --border: #24262b; --border-2: #33363c;
-    --panel: #101113; --text: #ececec; --muted: #8b9099; --faint: #5c616a;
-    --out: #ece4d4; --in: #d95a9e; --fc: #e9b949;
-    --onshore: #1b9a85; --large: #c8553a; --offshore: #3c8ed8; --solar: #b08a10; --small: #8f6ae6; --imported: #d95a9e;
-    --sans: "Inter", system-ui, sans-serif; --head: "Inter Tight", "Inter", system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, monospace;
+    --paper: #f3f5f7; --card: #ffffff; --ink: #14202b; --muted: #5d6b78; --faint: #93a0ac; --line: #d5dbe1; --hair: #e6eaee;
+    --pipe: #9aa6b2; --sel: #0f7c86; --fc: #c2700a;
+    --fossil: #cf5a3c; --nuclear: #9a64d6; --solar: #b08a10; --hydro: #2f5fc8; --bio: #2e9a63; --wind: #3aa0d2; --other: #8a949e;
+    --sans: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.45 var(--sans); }
-  a { color: var(--text); }
-  .app { display: grid; grid-template-columns: 1fr 360px; grid-template-rows: 1fr auto; height: 100vh; min-height: 640px; }
-  .map-wrap { position: relative; overflow: hidden; grid-column: 1; grid-row: 1; }
-  #map { position: absolute; inset: 0; width: 100%; height: 100%; }
-  aside { grid-column: 2; grid-row: 1 / span 2; border-left: 1px solid var(--border); background: var(--panel); overflow-y: auto; }
-  .timeline { grid-column: 1; grid-row: 2; border-top: 1px solid var(--border); background: var(--bg); padding: 8px 14px 10px; }
-
-  .title { position: absolute; left: 28px; top: 20px; pointer-events: none; max-width: 420px; }
-  .title a { pointer-events: auto; color: var(--muted); text-decoration: none; font-size: 13px; }
-  .title a:hover { color: var(--text); }
-  h1 { font: 600 44px/1.02 var(--head); letter-spacing: -0.02em; margin: 10px 0 14px; }
-  h1 span { color: #7cc4f2; }
-  .when { font: 500 14px var(--mono); color: var(--text); display: flex; align-items: center; gap: 8px; }
-  .when i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: inline-block; }
-  .when i.live { background: #4ade80; }
-  .when i.fc { background: var(--fc); }
-  .when em { font-style: normal; color: var(--muted); }
-
-  .legend { position: absolute; left: 28px; bottom: 22px; width: 232px; background: rgba(16,17,19,.92); border: 1px solid var(--border-2);
-            border-radius: 12px; padding: 14px 16px; font-size: 13px; }
-  .legend h2 { font: 500 12px var(--mono); color: var(--muted); margin: 0 0 10px; letter-spacing: .02em; }
-  .legend .row { margin-bottom: 12px; }
-  .legend .row:last-child { margin-bottom: 0; }
-  .legend b { font-weight: 600; display: block; }
-  .legend small { color: var(--muted); font: 12px var(--mono); display: block; margin: 2px 0 6px; }
-  .legend svg { display: block; }
-
-  .top-right { position: absolute; right: 18px; top: 18px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-  .btn { font: 500 13px var(--sans); color: var(--text); background: rgba(16,17,19,.92); border: 1px solid var(--border-2);
-         border-radius: 10px; padding: 9px 14px; cursor: pointer; text-decoration: none; display: inline-flex; gap: 8px; align-items: center; }
-  .btn:hover { border-color: #4a4e56; }
-  .btn small { display: block; color: var(--muted); font: 12px var(--mono); }
-  .seg { display: inline-flex; background: rgba(16,17,19,.92); border: 1px solid var(--border-2); border-radius: 10px; padding: 3px; }
-  .seg button { font: 500 12.5px var(--sans); color: var(--muted); background: none; border: 0; border-radius: 7px; padding: 6px 11px; cursor: pointer; }
-  .seg button.on { color: var(--bg); background: var(--text); }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); font: 14px/1.5 var(--sans); }
+  a { color: var(--sel); }
+  button { font-family: inherit; }
+  header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 22px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 18px; font-weight: 600; margin: 0; }
+  header .when { font: 500 14px var(--mono); }
+  header .when em { font-style: normal; color: var(--fc); }
+  header .links { margin-left: auto; display: flex; gap: 18px; font-size: 14px; }
+  header .links a { color: var(--muted); text-decoration: none; } header .links a:hover { color: var(--ink); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; padding: 2px; background: var(--paper); }
+  .seg button { font-size: 13px; color: var(--muted); background: none; border: 0; border-radius: 6px; padding: 5px 11px; cursor: pointer; }
+  .seg button.on { background: var(--ink); color: #fff; }
   .seg button:disabled { opacity: .35; cursor: default; }
-  .method { display: none; position: absolute; right: 18px; top: 112px; width: 340px; background: #121316; border: 1px solid var(--border-2);
-            border-radius: 12px; padding: 16px 18px; font-size: 13px; color: #c9ccd2; z-index: 5; }
-  .method.open { display: block; }
-  .method p { margin: 0 0 9px; }
-  .method p:last-child { margin: 0; }
-  .credit { position: absolute; right: 14px; bottom: 8px; font: 11px var(--mono); color: var(--faint); }
+  .seg span { font: 12px var(--mono); color: var(--muted); padding: 5px 4px 0 8px; }
 
-  /* map */
-  .country { fill: var(--land); stroke: #23252a; stroke-width: .7; }
-  .country.dk { fill: var(--dk); stroke: #3a3e45; stroke-width: .9; }
-  .cname { font: 500 12px var(--mono); fill: #6d727b; }
-  .cname tspan.p { fill: #a9aeb6; }
-  .cable-bg { fill: none; stroke: #1b1d21; stroke-linecap: round; }
-  .cable { fill: none; stroke-linecap: round; }
-  .cable-base { fill: none; stroke-linecap: round; }
-  .cable.flow { stroke-dasharray: 6 18; animation: flow linear infinite; }
-  @keyframes flow { from { stroke-dashoffset: 48; } to { stroke-dashoffset: 0; } }
-  .clabel { font: 500 11.5px var(--mono); fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
-  .clabel.dim { fill: var(--faint); }
-  .area-label { font: 600 13px var(--head); fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
-  .area-sub { font: 11.5px var(--mono); fill: #b5b9c0; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
-  @media (prefers-reduced-motion: reduce) { .cable.flow { animation: none; stroke-dasharray: none; } }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; padding: 20px 24px 8px; max-width: 1500px; margin: 0 auto; }
+  .board { background: var(--card); border: 1px solid var(--line); border-radius: 14px; position: relative; height: calc(100vh - 110px); min-height: 560px; max-height: 860px; }
+  #map { width: 100%; height: 100%; display: block; }
+  .key { position: absolute; left: 18px; bottom: 14px; display: flex; align-items: center; gap: 10px; font: 12px var(--mono); color: var(--muted); }
+  .key .ramp { width: 120px; height: 8px; border-radius: 4px; }
+  aside { display: flex; flex-direction: column; gap: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .zone-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .zone-head h2 { font-size: 28px; font-weight: 600; margin: 0; }
+  .zone-head span { color: var(--muted); }
+  .price { font: 500 44px/1 var(--mono); margin: 14px 0 2px; font-variant-numeric: tabular-nums; }
+  .price small { font-size: 15px; color: var(--muted); }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .pair div { font: 12px var(--mono); color: var(--muted); }
+  .pair b { display: block; font: 500 20px var(--mono); color: var(--ink); }
+  .mix { display: flex; height: 12px; border-radius: 3px; overflow: hidden; margin: 18px 0 8px; gap: 2px; }
+  .mix i { display: block; height: 100%; }
+  .mix-key { display: flex; flex-wrap: wrap; gap: 2px 12px; font: 12px var(--mono); color: var(--muted); }
+  .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+  .flows { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px 8px; align-items: baseline; font-size: 14px; }
+  .flows .dir { font: 600 14px var(--mono); }
+  .flows .v { font: 14px var(--mono); text-align: right; }
+  .flows .sub { grid-column: 2 / -1; font: 12px var(--mono); color: var(--muted); margin-top: -4px; }
+  .flows .sub b { color: var(--fc); font-weight: 500; }
+  .zbtn { all: unset; cursor: pointer; } .zbtn:hover { text-decoration: underline; } .zbtn:focus-visible { outline: 2px solid var(--sel); }
+  .label { font: 12px var(--mono); color: var(--muted); margin: 0 0 10px; }
+  .record b { font: 500 22px var(--mono); }
+  .record p { margin: 4px 0; color: var(--muted); font-size: 13px; }
 
-  /* panel */
-  .sec { padding: 18px 20px; border-bottom: 1px solid var(--border); }
-  .sec:last-child { border-bottom: 0; }
-  .eyebrow { font: 12px var(--mono); color: var(--muted); margin: 0 0 4px; }
-  .sec h3 { font: 600 20px var(--head); margin: 0; }
-  .big { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .big .lab { font: 12px var(--mono); color: var(--muted); }
-  .big .num { font: 600 30px/1.1 var(--head); margin: 4px 0 4px; font-variant-numeric: tabular-nums; }
-  .big .sub { font: 12px var(--mono); color: var(--muted); }
-  .rows { display: grid; grid-template-columns: 1fr 86px 70px; gap: 7px 10px; align-items: center; font-size: 13px; }
-  .rows .h { font: 12px var(--mono); color: var(--muted); }
-  .rows .v { text-align: right; font: 13px var(--mono); font-variant-numeric: tabular-nums; }
-  .bar { height: 4px; background: #1e2024; border-radius: 2px; overflow: hidden; }
-  .bar i { display: block; height: 100%; border-radius: 2px; }
-  .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 8px; vertical-align: 0; }
-  .note { font: 12px var(--mono); color: var(--muted); margin: 10px 0 0; }
-  .fcline { grid-column: 1 / -1; font: 11.5px var(--mono); color: var(--muted); margin: -4px 0 2px 17px; }
-  .fcline b { color: var(--fc); font-weight: 500; }
-  .record { font-size: 13px; color: #c9ccd2; }
-  .record p { margin: 6px 0; }
+  .tile rect.bg { stroke: none; }
+  .tile { cursor: pointer; }
+  .tile .code { font: 600 14px var(--sans); }
+  .tile .p { font: 500 13px var(--mono); }
+  .tile.sel rect.ring { stroke: var(--ink); stroke-width: 2.5; }
+  .tile:focus { outline: none; } .tile:focus-visible rect.ring { stroke: var(--sel); stroke-width: 3; }
+  .pipe { fill: none; stroke-linecap: butt; }
+  .chev { fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .mw { font: 500 11.5px var(--mono); fill: var(--ink); }
+  .mw-bg { fill: #fff; stroke: var(--line); }
 
-  /* timeline */
-  .tl-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
-  .play { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border-2); background: none; color: var(--text); cursor: pointer; display: grid; place-items: center; }
-  .tl-title { font: 12px var(--mono); color: var(--muted); }
-  .tl-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 12px var(--mono); color: var(--muted); }
-  .tl-legend span { display: inline-flex; align-items: center; }
-  .tl-readout { margin-left: auto; font: 12px var(--mono); color: var(--text); background: #16181b; border: 1px solid var(--border-2); border-radius: 6px; padding: 3px 9px; }
-  #tl { width: 100%; height: 206px; display: block; cursor: crosshair; touch-action: none; }
+  .timeline { max-width: 1500px; margin: 0 auto; padding: 8px 24px 24px; }
+  .tl-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px 8px; }
+  .tl-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .play { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
+  #tl { width: 100%; height: 190px; display: block; cursor: crosshair; touch-action: none; }
   #tl text { font: 11px var(--mono); fill: var(--muted); }
-  #tl:focus { outline: none; }
-  #tl:focus-visible { outline: 1px solid var(--muted); outline-offset: 2px; }
+  #tl:focus-visible { outline: 2px solid var(--sel); }
+  footer { text-align: center; font: 12px var(--mono); color: var(--faint); padding: 0 16px 24px; }
 
-  @media (max-width: 1000px) {
-    .app { display: flex; flex-direction: column; height: auto; }
-    .map-wrap { order: 1; } .timeline { order: 2; } aside { order: 3; }
-    .map-wrap { height: 72vh; min-height: 460px; }
-    h1 { font-size: 30px; }
-    .title { left: 16px; top: 14px; }
-    .legend { display: none; }
-    .top-right { right: 12px; top: auto; bottom: 12px; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; }
-    .method { top: auto; bottom: 64px; right: 12px; left: 12px; width: auto; }
-    .timeline { padding: 8px 12px; }
-    aside { border-left: 0; }
-    .tl-readout { margin-left: 0; }
+  @media (max-width: 980px) {
+    main { grid-template-columns: 1fr; padding: 16px; }
+    .board { height: auto; min-height: 0; aspect-ratio: 1 / 1.02; }
+    header { padding: 12px 16px; } header .links { margin-left: 0; }
+    .timeline { padding: 0 16px 20px; }
   }
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="map-wrap">
-    <svg id="map" role="img" aria-label="Map of Denmark with its power cables to the neighbours"></svg>
-    <div class="title">
-      <a href="https://jacobazu.github.io/">← jacobazu.github.io</a>
-      <h1>Denmark's power,<br><span>in and out</span></h1>
-      <div class="when"><i id="dot"></i><span id="when"></span></div>
-    </div>
-    <div class="legend" aria-hidden="true">
-      <h2>How to read the map</h2>
-      <div class="row"><b>Cable</b><small>width is the power it carries, 0 to 2 GW</small>
-        <svg width="190" height="34"><line x1="4" y1="9" x2="150" y2="9" stroke="var(--out)" stroke-width="5" stroke-linecap="round"/><text x="158" y="13" fill="#8b9099" font-family="Geist Mono" font-size="11">out</text>
-        <line x1="4" y1="26" x2="150" y2="26" stroke="var(--in)" stroke-width="5" stroke-linecap="round"/><text x="158" y="30" fill="#8b9099" font-family="Geist Mono" font-size="11">in</text></svg></div>
-      <div class="row"><b>Forecast</b><small>dashed: our forecast for DK1's cables</small>
-        <svg width="190" height="12"><line x1="4" y1="6" x2="150" y2="6" stroke="var(--fc)" stroke-width="4" stroke-dasharray="8 6" stroke-linecap="round"/></svg></div>
-      <div class="row"><b>Price area</b><small>ring: what it generates, by source</small>
-        <svg width="190" height="26" id="legend-ring"></svg></div>
-    </div>
-    <div class="top-right">
-      <button class="btn" id="method-btn" aria-expanded="false"><span>Methodology<small>how the numbers are made</small></span>›</button>
-      <a class="btn" href="record.html">Forecast record ›</a>
-      <div class="seg" role="group" aria-label="Which flows the map shows">
-        <button data-mode="measured" class="on">Measured</button><button data-mode="auction">Auction</button><button data-mode="forecast">Forecast</button>
-      </div>
-    </div>
-    <div class="method" id="method">
-      <p><b>Measured</b> flows and generation are Energinet's real-time data, five-minute readings averaged to hours. They cover both price areas and every cable.</p>
-      <p><b>Auction</b> flows are what the day-ahead auction scheduled on DK1's cables (ENTSO-E). That is what the forecast tries to hit; the measured flow drifts from it during the day.</p>
-      <p><b>Forecast</b>: one lasso regression per DK1 cable, saved before noon the day before and never changed. Days marked backfilled were made afterwards, with only what was published before each auction. DK2's cables are not forecast.</p>
-      <p>Cable routes are schematic. Prices are day-ahead, €/MWh.</p>
-    </div>
-    <div class="credit">Borders: Natural Earth</div>
+<header>
+  <h1>Power in Northern Europe</h1>
+  <span class="when" id="when"></span>
+  <div class="seg" role="group" aria-label="What DK1's cables show" id="mode"><span>DK1 cables</span><button data-mode="measured" class="on">Measured</button><button data-mode="auction">Auction</button><button data-mode="forecast">Forecast</button></div>
+  <span class="links"><a href="record.html">Forecast record</a><a href="https://jacobazu.github.io/">jacobazu.github.io</a></span>
+</header>
+<main>
+  <div class="board">
+    <svg id="map" role="img" aria-label="Schematic of Northern Europe's price areas, coloured by price, with the power flowing between them"></svg>
+    <div class="key" aria-hidden="true"><span>0 €</span><div class="ramp" id="ramp"></div><span>250+ €/MWh</span><span style="margin-left:10px">› direction of flow, width = MW</span></div>
   </div>
-
   <aside id="panel" aria-live="polite"></aside>
-
-  <div class="timeline">
-    <div class="tl-head">
-      <button class="play" id="play" aria-label="Play through the hours">▶</button>
-      <span class="tl-title">What Denmark generates and what comes in, by source</span>
-      <span class="tl-legend" id="tl-legend"></span>
-      <span class="tl-readout" id="readout"></span>
-    </div>
-    <svg id="tl" tabindex="0" aria-label="Timeline: generation by source per hour, and DK1's net export with our forecast. Use the arrow keys to move between hours."></svg>
+</main>
+<section class="timeline">
+  <div class="tl-card">
+    <div class="tl-head"><button class="play" id="play" aria-label="Play through the hours">▶</button><span class="label" id="tl-title" style="margin:0"></span></div>
+    <svg id="tl" tabindex="0" aria-label="Timeline: generation by fuel for the chosen area, and DK1's net export with our forecast. Arrow keys move between hours."></svg>
   </div>
-</div>
+</section>
+<footer>Data: ENTSO-E, Energinet, Elexon, via the Rebase Grid API · auction flows from ENTSO-E · forecast saved before each auction</footer>
 
 <script id="data" type="application/json">__DATA__</script>
-<script id="geo" type="application/json">__GEO__</script>
 <script>
 const D = JSON.parse(document.getElementById("data").textContent);
-const GEO = JSON.parse(document.getElementById("geo").textContent);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-
-const SOURCES = [
-  ["onshore", "Onshore wind"], ["large", "Large plants"], ["offshore", "Offshore wind"],
-  ["solar", "Solar"], ["small", "Small plants"], ["imported", "Imported"]];
-const COL = Object.fromEntries(SOURCES.map(([k]) => [k, css("--" + k)]));
-const CABLES = [
-  { id: "DK1-NO2", to: "Norway", link: "Skagerrak", area: "DK1", pts: [[9.55, 56.45], [8.55, 57.2], [8.0, 58.12]], lab: [-10, 0, "end"] },
-  { id: "DK1-SE3", to: "Sweden", link: "Konti-Skan", area: "DK1", pts: [[10.1, 57.05], [11.2, 57.5], [12.0, 57.55]], lab: [0, -12, "middle"] },
-  { id: "DK1-NL", to: "the Netherlands", link: "COBRAcable", area: "DK1", pts: [[8.65, 55.5], [7.45, 54.5], [6.85, 53.45]], lab: [-12, 0, "end"] },
-  { id: "DK1-GB", to: "Britain", link: "Viking Link", area: "DK1", pts: [[8.75, 55.45], [7.2, 55.75], [5.75, 55.55]], lab: [0, -12, "middle"] },
-  { id: "DK1-DE", to: "Germany", link: "land border", area: "DK1", pts: [[9.3, 55.05], [9.45, 54.7], [9.75, 54.3]], lab: [-12, 4, "end"] },
-  { id: "DK1-DK2", to: "DK2", link: "Great Belt", area: "DK1", pts: [[10.45, 55.33], [10.9, 55.25], [11.25, 55.42]], lab: [0, 22, "middle"] },
-  { id: "DK2-DE", to: "Germany", link: "Kontek, Kriegers Flak", area: "DK2", pts: [[12.05, 55.3], [12.35, 54.75], [12.15, 54.15]], lab: [12, 4, "start"] },
-  { id: "DK2-SE4", to: "Sweden", link: "Øresund", area: "DK2", pts: [[12.6, 55.72], [12.85, 55.75], [13.05, 55.95]], lab: [12, 2, "start"] },
-  { id: "BH-SE4", to: "Sweden", link: "Bornholm", area: "DK2", pts: [[14.75, 55.2], [14.45, 55.42], [14.2, 55.5]], lab: [0, -12, "middle"] },
-];
-const EXTERNAL = CABLES.filter(c => c.id !== "DK1-DK2");
-const NEIGHBOURS = [
-  { name: "Norway", zone: "NO2", at: [9.05, 57.95] }, { name: "Sweden", zone: "SE3", at: [13.7, 56.85] },
-  { name: "Germany", zone: "DE", at: [10.6, 53.75] }, { name: "Netherlands", zone: "NL", at: [6.25, 53.62] },
-  { name: "Britain", zone: null, at: [5.65, 55.95] }];
-const AREAS = [{ id: "DK1", at: [9.15, 56.15] }, { id: "DK2", at: [11.85, 55.5] }];
-
-const H = D.hours.length;
-const fmtMW = v => v == null || isNaN(v) ? "–" : Math.abs(v) >= 1000 ? (Math.abs(v) / 1000).toFixed(2).replace(/\.?0+$/, "") + " GW" : Math.round(Math.abs(v)) + " MW";
+const FUEL_NAMES = { fossil: "fossil", nuclear: "nuclear", solar: "solar", hydro: "hydro", bio: "bio and waste", wind: "wind", other: "other" };
+const FUELS = D.fuels, COL = Object.fromEntries(FUELS.map(f => [f, css("--" + f)]));
+const H = D.hours.length, Z = Object.fromEntries(D.zones.map(z => [z.id, z]));
+const CABLE_OF = Object.fromEntries(Object.entries(D.cables).map(([c, b]) => [b, c]));
+// schematic positions, roughly where each area lies
+const POS = { NO4: [4.3, 0], SE1: [5.5, 0.35], NO3: [3.1, 1.05], SE2: [4.6, 1.45], FI: [6.7, 1.2], NO5: [1.65, 2.05], NO1: [2.9, 2.3],
+  SE3: [4.3, 2.7], EE: [6.8, 2.7], NO2: [2.0, 3.45], LV: [6.8, 3.85], SE4: [4.55, 3.95], GB: [0.05, 4.7], DK1: [2.35, 4.7], DK2: [3.6, 4.85],
+  LT: [6.55, 5.0], NL: [1.0, 6.05], DE: [2.75, 6.15], PL: [5.0, 6.1] };
+const price = d3.scaleSequential([0, 250], d3.interpolateLab("#e8edf4", "#1c2c66")).clamp(true);
+const val = (a, i) => a && a[i] != null ? a[i] : null;
+const fmtMW = v => v == null ? "–" : Math.abs(v) >= 1000 ? (Math.abs(v) / 1000).toFixed(2).replace(/\.?0+$/, "") + " GW" : Math.round(Math.abs(v)) + " MW";
 const fmtGW = v => v == null ? "–" : (v / 1000).toFixed(1) + " GW";
-const dayName = s => { const d = new Date(s.slice(0, 10) + "T12:00"); return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); };
-const val = (arr, i) => arr && arr[i] != null ? arr[i] : null;
-
-function hasMeasured(i) { return D.gen.DK1.offshore[i] != null; }
-function hasFc(i) { return D.fc["DK1-DE"] && D.fc["DK1-DE"][i] != null; }
-function hasAuc(i) { return D.auc["DK1-DE"] && D.auc["DK1-DE"][i] != null; }
-
-let cur = D.last_measured >= 0 ? D.last_measured : 0;
-let mode = "measured", chosen = false;
+const dayName = s => new Date(s.slice(0, 10) + "T12:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+const genOf = (z, i) => { const g = D.gen[z]; if (!g) return null; let s = 0, any = false; for (const f of FUELS) { const v = val(g[f], i); if (v != null) { s += v; any = true; } } return any ? s : null; };
+const hasFc = i => Object.values(D.fc).some(a => val(a, i) != null);
+const hasAuc = i => Object.values(D.auc).some(a => val(a, i) != null);
+let cur = Math.max(0, D.last_measured), sel = "DK1", mode = "measured", chosen = false;
+const towards = (f, z, v) => v == null ? null : (f.a === z ? v : -v);
+function flowValue(f, i) {
+  if (CABLE_OF[f.id]) {
+    if (mode === "forecast") return { v: val(D.fc[f.id], i), kind: "forecast" };
+    if (mode === "auction") return { v: val(D.auc[f.id], i), kind: "auction" };
+    const m = val(f.v, i);
+    if (m == null && i > D.last_measured) { const fc = val(D.fc[f.id], i); if (fc != null) return { v: fc, kind: "forecast" }; }
+    return { v: m, kind: "measured" };
+  }
+  return { v: val(f.v, i), kind: "measured" };
+}
+document.getElementById("ramp").style.background = `linear-gradient(90deg, ${price(0)}, ${price(125)}, ${price(250)})`;
 
 // ---------- map ----------
 const svg = d3.select("#map");
-let proj, path;
+let S = 1, T = 70, OX = 0, OY = 0;
+const ctr = z => [OX + POS[z][0] * S + T / 2, OY + POS[z][1] * S + T / 2];
 function drawMap() {
-  const el = document.getElementById("map"); const w = el.clientWidth, h = el.clientHeight;
+  const el = document.getElementById("map"), w = el.clientWidth, h = el.clientHeight;
   svg.attr("viewBox", `0 0 ${w} ${h}`).selectAll("*").remove();
-  const narrow = w < 700;
-  const view = { type: "MultiPoint", coordinates: narrow ? [[8.0, 54.35], [13.3, 57.85]] : [[5.6, 53.35], [15.2, 58.2]] };
-  const left = w > 900 ? 285 : 20;
-  const pad = narrow ? [[10, 175], [w - 10, h - 110]] : [[left, 24], [w - 24, h - 20]];
-  proj = d3.geoMercator().fitExtent(pad, view);
-  path = d3.geoPath(proj);
-  const g = svg.append("g");
-  g.selectAll("path.country").data(GEO.features).join("path")
-    .attr("class", d => "country" + (d.properties.name === "Denmark" ? " dk" : "")).attr("d", path);
-  g.append("g").attr("id", "cables");
-  g.append("g").attr("id", "areas");
-  g.append("g").attr("id", "names");
+  const xs = Object.values(POS).map(p => p[0]), ys = Object.values(POS).map(p => p[1]);
+  const spanX = d3.max(xs) - d3.min(xs), spanY = d3.max(ys) - d3.min(ys);
+  S = Math.min((w - 60) / (spanX + 0.75), (h - 70) / (spanY + 0.75));
+  T = S * 0.72;
+  OX = (w - (spanX * S + T)) / 2 - d3.min(xs) * S; OY = 22 + (h - 50 - (spanY * S + T)) / 2 - d3.min(ys) * S;
+  svg.append("g").attr("id", "pipes");
+  svg.append("g").attr("id", "tiles");
+  svg.append("g").attr("id", "labels");
   render();
 }
 
-function curve(c) {
-  const p = c.pts.map(q => proj(q));
-  return `M${p[0]}Q${p[1]} ${p[2]}`;
-}
-
-function flows(i) {
-  // net flow per cable, + = out of the danish side, and how it was made
-  const out = {};
-  for (const c of CABLES) {
-    let v = null, kind = mode;
-    if (mode === "forecast" && c.area === "DK1") v = val(D.fc[c.id], i);
-    else if (mode === "auction" && c.area === "DK1") v = val(D.auc[c.id], i);
-    else if (mode === "measured") v = val(D.ex[c.id], i);
-    if (v == null && mode === "measured" && c.area === "DK1") { v = val(D.fc[c.id], i); kind = v == null ? null : "forecast"; }
-    out[c.id] = { v, kind: v == null ? null : kind };
-  }
-  return out;
-}
-
 function render() {
-  if (!proj) return;
-  const F = flows(cur);
-  const width = v => 1.6 + Math.min(Math.abs(v), 2000) / 2000 * 10;
-  const cg = d3.select("#cables").selectAll("g.c").data(CABLES, d => d.id).join(enter => {
-    const g = enter.append("g").attr("class", "c");
-    g.append("path").attr("class", "cable-bg");
-    g.append("path").attr("class", "cable-base");
-    g.append("path").attr("class", "cable");
-    g.append("text").attr("class", "clabel");
+  if (!svg.select("#pipes").node()) return;
+  const flows = D.flows.filter(f => POS[f.a] && POS[f.b]);
+  const width = v => v == null ? 1.5 : 2 + Math.min(Math.abs(v), 3000) / 3000 * T * 0.32;
+  const pg = svg.select("#pipes").selectAll("g.p").data(flows, f => f.id).join(e => { const g = e.append("g").attr("class", "p"); g.append("line").attr("class", "pipe"); g.append("g").attr("class", "chevs"); return g; });
+  const labels = [];
+  pg.each(function (f) {
+    const g = d3.select(this), { v, kind } = flowValue(f, cur);
+    const mine = f.a === sel || f.b === sel, isFc = kind === "forecast" && v != null;
+    let [x1, y1] = ctr(f.a), [x2, y2] = ctr(f.b);
+    if (v != null && v < 0) [x1, y1, x2, y2] = [x2, y2, x1, y1];            // draw from where the power comes from
+    const color = isFc ? css("--fc") : mine ? css("--sel") : css("--pipe");
+    g.select(".pipe").attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2).attr("stroke", v == null ? "#e1e6eb" : color)
+      .attr("stroke-width", width(v)).attr("stroke-opacity", mine || isFc ? .9 : .45).attr("stroke-dasharray", isFc ? "7 5" : null);
+    // chevrons pointing the way the power goes; more of them for more power
+    const len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    const n = v == null ? 0 : Math.max(1, Math.min(4, Math.round(Math.abs(v) / 700)));
+    const span = len - T * 0.9, start = (len - span) / 2;
+    g.select(".chevs").attr("transform", `translate(${x1},${y1}) rotate(${ang})`).selectAll("path").data(d3.range(n)).join("path")
+      .attr("class", "chev").attr("stroke", mine || isFc ? "#fff" : "#5d6b78").attr("stroke-opacity", mine || isFc ? .95 : .7)
+      .attr("d", k => { const x = start + span * (k + 1) / (n + 1), s = Math.max(3, Math.min(6, width(v) * .45)); return `M${x - s / 2},${-s} L${x + s / 2},0 L${x - s / 2},${s}`; });
+    if (mine && v != null && T >= 56) labels.push({ x: (x1 + x2) / 2, y: (y1 + y2) / 2, t: fmtMW(v), fc: isFc });
+    if (mine) g.raise();
+  });
+  svg.select("#labels").selectAll("g").data(labels).join(e => { const g = e.append("g"); g.append("rect").attr("class", "mw-bg"); g.append("text").attr("class", "mw"); return g; })
+    .each(function (l) {
+      const g = d3.select(this), t = g.select("text").attr("x", l.x).attr("y", l.y + 4).attr("text-anchor", "middle").text(l.t).attr("fill", l.fc ? css("--fc") : css("--ink"));
+      const w = l.t.length * 7 + 10;
+      g.select("rect").attr("x", l.x - w / 2).attr("y", l.y - 9).attr("width", w).attr("height", 18).attr("rx", 9);
+    });
+
+  const tg = svg.select("#tiles").selectAll("g.tile").data(D.zones.filter(z => POS[z.id]), z => z.id).join(e => {
+    const g = e.append("g").attr("class", "tile").attr("tabindex", 0).attr("role", "button");
+    g.append("rect").attr("class", "bg"); g.append("g").attr("class", "mixbar"); g.append("rect").attr("class", "ring").attr("fill", "none");
+    g.append("text").attr("class", "code"); g.append("text").attr("class", "p");
+    g.on("click", (e, z) => pick(z.id)).on("keydown", (e, z) => { if (e.key === "Enter" || e.key === " ") { pick(z.id); e.preventDefault(); } });
+    g.append("title");
     return g;
   });
-  cg.select(".cable-bg").attr("d", curve).attr("stroke-width", d => F[d.id].v == null ? 2 : width(F[d.id].v) + 3);
-  cg.select(".cable-base").attr("d", curve).each(function (d) {
-    const f = F[d.id], s = d3.select(this);
-    if (f.v == null || f.kind === "forecast") { s.attr("stroke", "none"); return; }
-    s.attr("stroke", f.v >= 0 ? css("--out") : css("--in")).attr("stroke-width", width(f.v)).attr("stroke-opacity", .38);
+  tg.classed("sel", z => z.id === sel).each(function (z) {
+    const g = d3.select(this), x = OX + POS[z.id][0] * S, y = OY + POS[z.id][1] * S, p = val(D.price[z.id], cur);
+    const fill = p == null ? "#eef1f4" : price(p), dark = p != null && d3.lab(fill).l < 58;
+    g.attr("aria-label", `${z.id} ${z.name}, ${p == null ? "no price" : Math.round(p) + " euro per megawatt hour"}`);
+    g.select("title").text(`${z.id} · ${z.name}`);
+    g.select("rect.bg").attr("x", x).attr("y", y).attr("width", T).attr("height", T).attr("rx", 8).attr("fill", fill);
+    g.select("rect.ring").attr("x", x - 1).attr("y", y - 1).attr("width", T + 2).attr("height", T + 2).attr("rx", 9).attr("stroke", z.id === sel ? css("--ink") : "none");
+    const small = T < 56;                                   // on a phone the tile shows only its name; the colour is the price
+    g.select(".code").attr("x", small ? x + T / 2 : x + 9).attr("y", small ? y + T / 2 + 4 : y + 8 + T * 0.18).attr("text-anchor", small ? "middle" : null)
+      .style("font-size", (small ? Math.max(9, T * 0.28) : T * 0.17) + "px").attr("fill", dark ? "#fff" : css("--ink")).text(z.id);
+    g.select(".p").attr("x", x + 9).attr("y", y + T * 0.66).style("font-size", T * 0.25 + "px").attr("fill", dark ? "#fff" : css("--ink")).text(small ? "" : p == null ? "–" : Math.round(p));
+    // what it makes, as one thin stacked bar along the bottom
+    const gen = D.gen[z.id] || {}, parts = FUELS.map(f => [f, Math.max(0, val(gen[f], cur) || 0)]), tot = d3.sum(parts, q => q[1]);
+    let off = 0;
+    g.select(".mixbar").selectAll("rect").data(tot && !small ? parts.filter(q => q[1] > 0) : []).join("rect")
+      .attr("y", y + T - 9).attr("height", 5).attr("x", q => { const o = x + 8 + off; off += q[1] / tot * (T - 16); return o; })
+      .attr("width", q => Math.max(0, q[1] / tot * (T - 16) - 1)).attr("fill", q => COL[q[0]]);
   });
-  cg.select(".cable").attr("d", curve).each(function (d) {
-    const f = F[d.id], s = d3.select(this);
-    if (f.v == null) { s.attr("stroke", "#2a2d32").attr("stroke-width", 1.5).attr("class", "cable").attr("stroke-dasharray", null).style("animation-duration", null); return; }
-    const isFc = f.kind === "forecast";
-    const color = isFc ? css("--fc") : f.v >= 0 ? css("--out") : css("--in");
-    s.attr("stroke", color).attr("stroke-width", isFc ? width(f.v) : Math.max(1.6, width(f.v) * 0.7))
-      .attr("class", "cable" + (isFc ? "" : " flow")).attr("stroke-dasharray", isFc ? "8 6" : null)
-      .style("animation-duration", (6 - Math.min(Math.abs(f.v), 2000) / 2000 * 5).toFixed(2) + "s")
-      .style("animation-direction", f.v >= 0 ? "normal" : "reverse");
-  });
-  cg.select(".clabel").each(function (d) {
-    const f = F[d.id], [x, y] = proj(d.pts[1]);
-    const t = d3.select(this).attr("x", x + d.lab[0]).attr("y", y + d.lab[1]).attr("text-anchor", d.lab[2]);
-    if (f.v == null) { t.attr("class", "clabel dim").text(d.area === "DK2" && mode !== "measured" ? "not covered" : ""); return; }
-    const dir = d.id === "DK1-DK2" ? (f.v >= 0 ? "→ DK2" : "← DK2") : (f.v >= 0 ? "out" : "in");
-    t.attr("class", "clabel").text(`${fmtMW(f.v)} ${dir}`);
-  });
-
-  const ar = d3.select("#areas").selectAll("g.a").data(AREAS, d => d.id).join(enter => {
-    const g = enter.append("g").attr("class", "a"); g.append("g").attr("class", "ring");
-    g.append("text").attr("class", "area-label"); g.append("text").attr("class", "area-sub"); return g;
-  });
-  ar.each(function (a) {
-    const [x, y] = proj(a.at), g = d3.select(this);
-    const parts = SOURCES.slice(0, 5).map(([k]) => ({ k, v: Math.max(0, val(D.gen[a.id][k], cur) || 0) }));
-    const tot = d3.sum(parts, p => p.v);
-    const r = tot ? 10 + Math.sqrt(tot) * 0.45 : 0;
-    const arcs = d3.pie().sort(null).value(p => p.v)(parts);
-    g.select(".ring").attr("transform", `translate(${x},${y})`).selectAll("path").data(arcs).join("path")
-      .attr("d", d3.arc().innerRadius(r * 0.62).outerRadius(r).padAngle(0.02)).attr("fill", p => COL[p.data.k]);
-    const price = val(D.price[a.id], cur);
-    g.select(".area-label").attr("x", x + r + 8).attr("y", y - 2).text(a.id);
-    g.select(".area-sub").attr("x", x + r + 8).attr("y", y + 13).text([tot ? fmtGW(tot) : null, price != null ? Math.round(price) + " €/MWh" : null].filter(Boolean).join(" · "));
-  });
-
-  d3.select("#names").selectAll("text").data(NEIGHBOURS).join("text").attr("class", "cname")
-    .attr("x", d => proj(d.at)[0]).attr("y", d => proj(d.at)[1])
-    .attr("text-anchor", d => d.name === "Britain" ? "start" : "middle")
-    .each(function (d) {
-      const p = d.zone ? val(D.price[d.zone], cur) : null;
-      d3.select(this).selectAll("tspan").data([d.name + (d.name === "Britain" ? " ←" : ""), p != null ? Math.round(p) + " €/MWh" : ""])
-        .join("tspan").attr("x", proj(d.at)[0]).attr("dy", (t, k) => k ? "1.25em" : 0).attr("class", (t, k) => k ? "p" : null).text(t => t);
-    });
 }
 
 // ---------- panel ----------
 function panel(i) {
-  const t = D.hours[i], meas = hasMeasured(i);
-  const g = k => (val(D.gen.DK1[k], i) || 0) + (val(D.gen.DK2[k], i) || 0);
-  let html = `<div class="sec"><p class="eyebrow">DK1 and DK2 · ${dayName(t)} ${t.slice(11, 13)}:00–${String((+t.slice(11, 13) + 1) % 24).padStart(2, "0")}:00</p><h3>Denmark</h3></div>`;
-  if (meas) {
-    const gen = d3.sum(SOURCES.slice(0, 5), ([k]) => g(k));
-    const net = -d3.sum(EXTERNAL, c => val(D.ex[c.id], i) || 0);       // + = comes in
-    const used = gen + net, ren = gen ? (g("onshore") + g("offshore") + g("solar")) / gen : 0;
-    html += `<div class="sec big">
-      <div><div class="lab">Generated</div><div class="num" style="color:#f08a6c">${fmtGW(gen)}</div><div class="sub">${fmtMW(net)} ${net >= 0 ? "comes in" : "goes out"}, net</div></div>
-      <div><div class="lab">Used</div><div class="num" style="color:#7cc4f2">${fmtGW(used)}</div><div class="sub">${Math.round(ren * 100)}% of what's made is wind and sun</div></div></div>`;
-    const mx = d3.max(SOURCES.slice(0, 5), ([k]) => g(k)) || 1;
-    html += `<div class="sec"><p class="eyebrow">Made here, by source</p><div class="rows">` +
-      SOURCES.slice(0, 5).map(([k, n]) => `<div><span class="sw" style="background:${COL[k]}"></span>${n}</div><div class="bar"><i style="width:${g(k) / mx * 100}%;background:${COL[k]}"></i></div><div class="v">${fmtMW(g(k))}</div>`).join("") +
-      `</div><p class="note">Large plants are units of 100 MW or more, mostly CHP on coal, gas and biomass.</p></div>`;
-    html += `<div class="sec"><p class="eyebrow">Price areas · generated, used, price</p><div class="rows" style="grid-template-columns:1fr 70px 70px 64px">` +
-      ["DK1", "DK2"].map(a => {
-        const ga = d3.sum(SOURCES.slice(0, 5), ([k]) => val(D.gen[a][k], i) || 0);
-        const cabs = CABLES.filter(c => c.area === a || (a === "DK2" && c.id === "DK1-DK2"));
-        const exp = d3.sum(cabs, c => (val(D.ex[c.id], i) || 0) * (a === "DK2" && c.id === "DK1-DK2" ? -1 : 1));
-        const p = val(D.price[a], i);
-        return `<div>${a}</div><div class="v">${fmtGW(ga)}</div><div class="v">${fmtGW(ga - exp)}</div><div class="v">${p != null ? Math.round(p) + " €" : "–"}</div>`;
-      }).join("") + `</div></div>`;
-  } else {
-    html += `<div class="sec"><p class="note" style="margin:0">No measurements for this hour yet. ${hasFc(i) ? "The map shows our forecast for DK1's cables, saved before the auction." : ""}</p></div>`;
-  }
-  const rows = EXTERNAL.concat(CABLES.filter(c => c.id === "DK1-DK2")).map(c => {
-    const m = val(D.ex[c.id], i), a = val(D.auc[c.id], i), f = val(D.fc[c.id], i);
-    return { c, m, a, f, show: meas ? m : f };
-  }).filter(r => r.show != null).sort((x, y) => Math.abs(y.show) - Math.abs(x.show));
-  const mx = d3.max(rows, r => Math.abs(r.show)) || 1;
-  const word = r => r.c.id === "DK1-DK2" ? `Great Belt, ${r.show >= 0 ? "DK1 → DK2" : "DK2 → DK1"}` : `${r.show >= 0 ? "out to" : "in from"} ${r.c.to} <span style="color:var(--faint);font:11.5px var(--mono)">${r.c.id.startsWith("BH") ? "Bornholm" : r.c.area}</span>`;
-  html += `<div class="sec"><p class="eyebrow">Across the borders · ${meas ? "measured" : "forecast"}</p><div class="rows">` + rows.map(r =>
-    `<div><span class="sw" style="background:${meas ? (r.show >= 0 ? css("--out") : css("--in")) : css("--fc")}"></span>${word(r)}</div>
-     <div class="bar"><i style="width:${Math.abs(r.show) / mx * 100}%;background:${meas ? (r.show >= 0 ? css("--out") : css("--in")) : css("--fc")}"></i></div><div class="v">${fmtMW(r.show)}</div>` +
-    (r.c.area === "DK1" && (r.a != null || (meas && r.f != null)) ? `<div class="fcline">auction ${r.a != null ? fmtMW(r.a) + (r.a >= 0 ? " out" : " in") : "not out yet"}${meas && r.f != null ? ` · <b>forecast ${fmtMW(r.f)} ${r.f >= 0 ? "out" : "in"}</b>` : ""}</div>` : "")
-  ).join("") + `</div><p class="note">Out and in are seen from the Danish side. Measured flows drift from what the auction set; the forecast aims at the auction.</p></div>`;
-  html += `<div class="sec record"><p class="eyebrow">Forecast record, DK1's six cables</p>${D.record_html}<p><a href="record.html">Per cable, backtest and method ›</a></p></div>`;
-  document.getElementById("panel").innerHTML = html;
+  const z = Z[sel], gen = D.gen[sel] || {}, g = genOf(sel, i), load = val(D.load[sel], i), p = val(D.price[sel], i);
+  const bs = D.flows.filter(f => f.a === sel || f.b === sel).map(f => {
+    const fv = flowValue(f, i), other = f.a === sel ? f.b : f.a;
+    return { f, other, v: towards(f, sel, fv.v), kind: fv.kind, auc: towards(f, sel, val(D.auc[f.id], i)), fc: towards(f, sel, val(D.fc[f.id], i)), meas: towards(f, sel, val(f.v, i)) };
+  }).filter(b => b.v != null).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+  const net = bs.length && bs.every(b => b.kind === "measured") ? d3.sum(bs, b => b.v) : null;
+  const parts = FUELS.map(f => [f, Math.max(0, val(gen[f], i) || 0)]).filter(q => q[1] > 0);
+  let html = `<div class="card"><div class="zone-head"><h2>${z.id}</h2><span>${z.name}</span></div>
+    <div class="price">${p == null ? "–" : Math.round(p)} <small>€/MWh</small></div>
+    <div class="pair"><div>made<b>${fmtGW(g)}</b></div><div>used<b>${fmtGW(load)}</b></div></div>` +
+    (parts.length ? `<div class="mix">${parts.map(q => `<i style="flex:${q[1]};background:${COL[q[0]]}" title="${FUEL_NAMES[q[0]]} ${fmtMW(q[1])}"></i>`).join("")}</div>
+     <div class="mix-key">${parts.sort((a, b) => b[1] - a[1]).map(q => `<span><span class="sw" style="background:${COL[q[0]]}"></span>${FUEL_NAMES[q[0]]} ${Math.round(100 * q[1] / g)}%</span>`).join("")}</div>` : "") + `</div>`;
+  html += `<div class="card"><p class="label">${net == null ? "flows" : net >= 0 ? `sends out ${fmtMW(net)} net` : `takes in ${fmtMW(net)} net`}</p><div class="flows">` +
+    (bs.length ? bs.map(b => `<span class="dir" style="color:${b.kind === "forecast" ? css("--fc") : css("--sel")}">${b.v >= 0 ? "→" : "←"}</span>
+      <span><button class="zbtn" data-z="${b.other}">${b.other}</button> <span style="color:var(--muted)">${Z[b.other].name}</span></span><span class="v">${fmtMW(b.v)}</span>` +
+      (CABLE_OF[b.f.id] && (b.auc != null || b.fc != null) ? `<span class="sub">${[
+        b.kind !== "auction" && b.auc != null ? `auction ${b.auc >= 0 ? "→" : "←"}${fmtMW(b.auc)}` : "",
+        b.kind !== "forecast" && b.fc != null ? `<b>forecast ${b.fc >= 0 ? "→" : "←"}${fmtMW(b.fc)}</b>` : "",
+        b.kind === "forecast" ? "<b>our forecast</b>" : ""].filter(Boolean).join(" · ")}</span>` : "")).join("")
+    : `<span></span><span style="color:var(--muted)">not published yet</span><span></span>`) + `</div></div>`;
+  html += `<div class="card record"><p class="label">DK1 forecast, error per cable and hour</p>${D.record_html}<p><a href="record.html">Record and backtest ›</a></p></div>`;
+  const el = document.getElementById("panel"); el.innerHTML = html;
+  el.querySelectorAll(".zbtn").forEach(b => b.onclick = () => pick(b.dataset.z));
 }
 
 // ---------- timeline ----------
 const tl = d3.select("#tl");
-let tx, tlH;
+let tx;
 function drawTimeline() {
-  const el = document.getElementById("tl"); const w = el.clientWidth, h = el.clientHeight; tlH = h;
+  const el = document.getElementById("tl"), w = el.clientWidth, h = el.clientHeight;
   tl.attr("viewBox", `0 0 ${w} ${h}`).selectAll("*").remove();
-  const m = { l: 8, r: 46, t: 6 }, stackH = 112, stripTop = stackH + 22, stripH = h - stripTop - 18;
+  const m = { l: 4, r: 44, t: 6 }, stackH = 104, stripTop = stackH + 24, stripH = h - stripTop - 18;
   tx = d3.scaleLinear([0, H - 1], [m.l, w - m.r]);
-  const series = SOURCES.map(([k]) => k);
-  const rows = D.hours.map((t, i) => {
-    const r = {};
-    for (const k of series.slice(0, 5)) r[k] = hasMeasured(i) ? (val(D.gen.DK1[k], i) || 0) + (val(D.gen.DK2[k], i) || 0) : null;
-    const net = -d3.sum(EXTERNAL, c => val(D.ex[c.id], i) || 0);
-    r.imported = hasMeasured(i) ? Math.max(0, net) : null; return r;
-  });
-  const stack = d3.stack().keys(series).value((d, k) => d[k] || 0)(rows);
-  const ymax = d3.max(rows, (r, i) => hasMeasured(i) ? d3.sum(series, k => r[k]) : 0) || 1;
+  const gen = D.gen[sel] || {}, load = D.load[sel] || [];
+  const rows = D.hours.map((t, i) => Object.fromEntries(FUELS.map(f => [f, val(gen[f], i)])));
+  const has = i => FUELS.some(f => rows[i][f] != null);
+  const ymax = d3.max(D.hours, (t, i) => Math.max(has(i) ? d3.sum(FUELS, f => rows[i][f] || 0) : 0, val(load, i) || 0)) || 1;
   const y = d3.scaleLinear([0, ymax], [m.t + stackH, m.t]);
-  const area = d3.area().defined((d, i) => hasMeasured(i)).x((d, i) => tx(i)).y0(d => y(d[0])).y1(d => y(d[1])).curve(d3.curveStepAfter);
-  // tomorrow / no-data zone
-  const firstNo = D.hours.findIndex((t, i) => i > D.last_measured);
-  if (firstNo > 0) {
-    tl.append("rect").attr("x", tx(firstNo)).attr("y", m.t).attr("width", tx(H - 1) - tx(firstNo) + 4).attr("height", stackH).attr("fill", "#121417");
-    if (tx(H - 1) - tx(firstNo) > 110) tl.append("text").attr("x", tx(firstNo) + 8).attr("y", m.t + 16).text("not measured yet");
-  }
-  tl.append("g").selectAll("path").data(stack).join("path").attr("d", area).attr("fill", d => COL[d.key]).attr("opacity", .92);
-  tl.append("text").attr("x", w - m.r + 6).attr("y", m.t + 10).text(fmtGW(ymax).replace(".0", ""));
-  tl.append("text").attr("x", w - m.r + 6).attr("y", m.t + stackH).text("0");
-  // day ticks
-  const short = w < 700;
   D.hours.forEach((t, i) => { if (t.slice(11, 13) === "00") {
-    tl.append("line").attr("x1", tx(i)).attr("x2", tx(i)).attr("y1", m.t).attr("y2", h - 14).attr("stroke", "#24262b");
-    tl.append("text").attr("x", tx(i) + 4).attr("y", h - 2).text(short ? dayName(t).split(" ")[1] : dayName(t));
+    tl.append("line").attr("x1", tx(i)).attr("x2", tx(i)).attr("y1", m.t).attr("y2", h - 14).attr("stroke", css("--hair"));
+    tl.append("text").attr("x", tx(i) + 4).attr("y", h - 2).text(w < 700 ? dayName(t).split(" ")[1] : dayName(t));
   }});
-  // strip: dk1 net export, auction vs forecast
-  const ys = d3.scaleLinear(d3.extent([].concat(D.dk1_auc, D.dk1_fc).filter(v => v != null).concat([0])), [stripTop + stripH, stripTop]).nice();
-  tl.append("line").attr("x1", m.l).attr("x2", w - m.r).attr("y1", ys(0)).attr("y2", ys(0)).attr("stroke", "#2c2f35");
+  const stack = d3.stack().keys(FUELS).value((d, k) => d[k] || 0)(rows);
+  const area = d3.area().defined((d, i) => has(i)).x((d, i) => tx(i)).y0(d => y(d[0])).y1(d => y(d[1])).curve(d3.curveStepAfter);
+  tl.append("g").selectAll("path").data(stack).join("path").attr("d", area).attr("fill", d => COL[d.key]);
+  tl.append("path").attr("d", d3.line().defined(v => v != null).x((v, i) => tx(i)).y(v => y(v)).curve(d3.curveStepAfter)(D.hours.map((t, i) => val(load, i))))
+    .attr("fill", "none").attr("stroke", css("--ink")).attr("stroke-width", 1.3);
+  tl.append("text").attr("x", w - m.r + 6).attr("y", m.t + 10).text(fmtGW(ymax));
+  const ext = d3.extent([].concat(D.dk1_auc, D.dk1_fc).filter(v => v != null).concat([0]));
+  const ys = d3.scaleLinear(ext, [stripTop + stripH, stripTop]).nice();
+  tl.append("line").attr("x1", m.l).attr("x2", w - m.r).attr("y1", ys(0)).attr("y2", ys(0)).attr("stroke", css("--line"));
   const line = arr => d3.line().defined(v => v != null).x((v, i) => tx(i)).y(v => ys(v)).curve(d3.curveStepAfter)(arr);
-  tl.append("path").attr("d", line(D.dk1_auc)).attr("fill", "none").attr("stroke", "#9aa0a8").attr("stroke-width", 1.4);
+  tl.append("path").attr("d", line(D.dk1_auc)).attr("fill", "none").attr("stroke", css("--ink")).attr("stroke-width", 1.3);
   tl.append("path").attr("d", line(D.dk1_fc)).attr("fill", "none").attr("stroke", css("--fc")).attr("stroke-width", 1.6).attr("stroke-dasharray", "4 3");
-  tl.append("text").attr("x", m.l + 2).attr("y", stripTop - 5).text("DK1 net export, GW: ");
-  tl.append("text").attr("x", m.l + 150).attr("y", stripTop - 5).attr("fill", "#c3c7ce").text("— auction");
-  tl.append("text").attr("x", m.l + 222).attr("y", stripTop - 5).style("fill", css("--fc")).text("- - our forecast");
-  tl.append("text").attr("x", w - m.r + 6).attr("y", ys(ys.domain()[1]) + 9).text((ys.domain()[1] / 1000).toFixed(1));
-  tl.append("text").attr("x", w - m.r + 6).attr("y", ys(ys.domain()[0])).text((ys.domain()[0] / 1000).toFixed(1));
-  // backfilled marks
-  D.fc_kind.forEach((k, i) => { if (k === "backfill" && (i === 0 || D.fc_kind[i - 1] !== "backfill")) {
-    let j = i; while (j + 1 < H && D.fc_kind[j + 1] === "backfill") j++;
-    tl.append("rect").attr("x", tx(i)).attr("y", stripTop + stripH + 1).attr("width", Math.max(1, tx(j) - tx(i))).attr("height", 2).attr("fill", "#5c616a");
-  }});
-  tl.append("line").attr("id", "cursor").attr("y1", m.t).attr("y2", h - 14).attr("stroke", "#ececec").attr("stroke-width", 1.2);
+  tl.append("text").attr("x", m.l).attr("y", stripTop - 6).text("DK1 net export: ").append("tspan").style("fill", css("--ink")).text("auction ").append("tspan").style("fill", css("--fc")).text("- - forecast");
+  tl.append("text").attr("x", w - m.r + 6).attr("y", stripTop + 8).text((ys.domain()[1] / 1000).toFixed(1) + " GW");
+  tl.append("line").attr("id", "cursor").attr("y1", m.t).attr("y2", h - 14).attr("stroke", css("--sel")).attr("stroke-width", 2);
+  document.getElementById("tl-title").innerHTML = `${sel}: what it makes, by fuel · line: what it uses · ` +
+    FUELS.map(f => `<span class="sw" style="background:${COL[f]};margin-left:6px"></span>${FUEL_NAMES[f]}`).join(" ");
   moveCursor();
 }
 function moveCursor() { if (tx) d3.select("#cursor").attr("x1", tx(cur)).attr("x2", tx(cur)); }
 
-function readout(i) {
-  const t = D.hours[i], g = k => (val(D.gen.DK1[k], i) || 0) + (val(D.gen.DK2[k], i) || 0);
-  let s = `${dayName(t)} ${t.slice(11, 13)}:00`;
-  if (hasMeasured(i)) {
-    const gen = d3.sum(SOURCES.slice(0, 5), ([k]) => g(k)), net = -d3.sum(EXTERNAL, c => val(D.ex[c.id], i) || 0);
-    s = `${fmtGW(gen)} made, ${fmtMW(net)} ${net >= 0 ? "in" : "out"} net, ${s}`;
-  } else if (D.dk1_fc[i] != null) s = `DK1 forecast ${fmtMW(D.dk1_fc[i])} ${D.dk1_fc[i] >= 0 ? "out" : "in"} net, ${s}`;
-  document.getElementById("readout").textContent = s;
-}
-
+// ---------- state ----------
 function select(i) {
   cur = Math.max(0, Math.min(H - 1, i));
-  const meas = hasMeasured(cur);
-  document.querySelectorAll(".seg button").forEach(b => {
-    const m = b.dataset.mode;
-    b.disabled = (m === "measured" && !meas) || (m === "auction" && !hasAuc(cur)) || (m === "forecast" && !hasFc(cur));
-  });
+  const meas = cur <= D.last_measured;
+  document.querySelectorAll("#mode button").forEach(b => { const m = b.dataset.mode;
+    b.disabled = (m === "measured" && !meas) || (m === "auction" && !hasAuc(cur)) || (m === "forecast" && !hasFc(cur)); });
   const auto = meas ? "measured" : hasFc(cur) ? "forecast" : "measured";
-  if (!chosen || document.querySelector(`.seg button[data-mode="${mode}"]`).disabled) setMode(auto, false);
-  const dot = document.getElementById("dot");
-  dot.className = cur === D.last_measured ? "live" : (!meas && hasFc(cur)) ? "fc" : "";
+  if (!chosen || document.querySelector(`#mode button[data-mode="${mode}"]`).disabled) setMode(auto, false);
   const t = D.hours[cur];
-  document.getElementById("when").innerHTML = `${dayName(t)} &nbsp;${t.slice(11, 13)}:00–${String((+t.slice(11, 13) + 1) % 24).padStart(2, "0")}:00 CET` +
-    (!meas && hasFc(cur) ? ` <em>· forecast${D.fc_kind[cur] === "backfill" ? ", backfilled" : ""}</em>` : cur === D.last_measured ? " <em>· latest</em>" : "");
-  render(); panel(cur); readout(cur); moveCursor();
+  document.getElementById("when").innerHTML = `${dayName(t)}, ${t.slice(11, 13)}:00` + (!meas && hasFc(cur) ? ` <em>forecast${D.fc_kind[cur] === "backfill" ? ", backfilled" : ""}</em>` : "");
+  render(); panel(cur); moveCursor();
 }
-function setMode(m, re = true) {
-  mode = m; document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
-  if (re) { render(); }
-}
-
-// ---------- wiring ----------
-document.querySelectorAll(".seg button").forEach(b => b.onclick = () => { chosen = true; setMode(b.dataset.mode); panel(cur); });
-const mb = document.getElementById("method-btn");
-mb.onclick = () => { const o = document.getElementById("method").classList.toggle("open"); mb.setAttribute("aria-expanded", o); };
+function setMode(m, re = true) { mode = m; document.querySelectorAll("#mode button").forEach(b => b.classList.toggle("on", b.dataset.mode === m)); if (re) { render(); panel(cur); } }
+function pick(z) { if (!Z[z]) return; sel = z; drawTimeline(); select(cur); }
+document.querySelectorAll("#mode button").forEach(b => b.onclick = () => { chosen = true; setMode(b.dataset.mode); });
 const tlEl = document.getElementById("tl");
-const pick = e => { const r = tlEl.getBoundingClientRect(); const x = (e.clientX - r.left) * (tlEl.viewBox.baseVal.width / r.width); select(Math.round(tx.invert(x))); };
+const pickHour = e => { const r = tlEl.getBoundingClientRect(); select(Math.round(tx.invert((e.clientX - r.left) * (tlEl.viewBox.baseVal.width / r.width)))); };
 let drag = false;
-tlEl.addEventListener("pointerdown", e => { drag = true; tlEl.setPointerCapture(e.pointerId); pick(e); });
-tlEl.addEventListener("pointermove", e => { if (drag) pick(e); });
+tlEl.addEventListener("pointerdown", e => { drag = true; tlEl.setPointerCapture(e.pointerId); pickHour(e); });
+tlEl.addEventListener("pointermove", e => { if (drag) pickHour(e); });
 tlEl.addEventListener("pointerup", () => drag = false);
 tlEl.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") { select(cur + (e.shiftKey ? 24 : 1)); e.preventDefault(); }
@@ -465,12 +316,8 @@ let timer = null;
 document.getElementById("play").onclick = function () {
   if (timer) { clearInterval(timer); timer = null; this.textContent = "▶"; return; }
   this.textContent = "❚❚"; if (cur >= H - 1) cur = 0;
-  timer = setInterval(() => { if (cur >= H - 1) { clearInterval(timer); timer = null; document.getElementById("play").textContent = "▶"; return; } select(cur + 1); }, 220);
+  timer = setInterval(() => { if (cur >= H - 1) { clearInterval(timer); timer = null; document.getElementById("play").textContent = "▶"; return; } select(cur + 1); }, 250);
 };
-document.getElementById("tl-legend").innerHTML = SOURCES.map(([k, n]) => `<span><span class="sw" style="background:${COL[k]}"></span>${n.toLowerCase()}</span>`).join("");
-const lr = d3.select("#legend-ring");
-SOURCES.slice(0, 5).forEach(([k], j) => lr.append("rect").attr("x", 4 + j * 36).attr("y", 6).attr("width", 30).attr("height", 10).attr("rx", 2).attr("fill", COL[k]));
-
 let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawMap(); drawTimeline(); }, 120); });
 drawMap(); drawTimeline(); select(cur);
 </script>

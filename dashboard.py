@@ -1,7 +1,7 @@
 # dashboard for the flow forecast, built from what the scripts save:
 #   site/index.html   map of denmark's cables, hour by hour: energinet's measured flows and generation (energi data service),
 #                     the auction flows and our forecast for dk1's cables, through tomorrow
-#   site/record.html  live record, backfilled days, tomorrow, backtest and method
+#   site/record.html  track record (backfilled days marked *), tomorrow, backtest and method
 #   python dashboard.py   (needs data/ from the actions cache for the auction flows and prices)
 
 from datetime import datetime, timezone
@@ -11,9 +11,9 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-ACCENT, TEAL, RED, GREEN = "#e9b949", "#3c8ed8", "#c8553a", "#1b9a85"
-INK, GREY, LINE, GRID, BEIGE = "#ececec", "#8b9099", "#24262b", "#1b1d21", "#4a4e56"
-FONT = "Inter, system-ui, sans-serif"
+ACCENT, TEAL, RED, GREEN = "#c2700a", "#0f7c86", "#cf5a3c", "#2e9a63"
+INK, GREY, LINE, GRID, BEIGE = "#14202b", "#5d6b78", "#d5dbe1", "#e6eaee", "#c3cbd3"
+FONT = "IBM Plex Sans, system-ui, sans-serif"
 PLOTLY_JS = "https://cdn.jsdelivr.net/npm/plotly.js-dist-min@4.1.1/plotly.min.js"
 CABLES = {"DK1-DE": "Germany", "DK1-NO2": "Norway", "DK1-GB": "Britain",
           "DK1-NL": "Netherlands", "DK1-SE3": "Sweden", "DK1-DK2": "Great Belt (DK2)"}
@@ -33,7 +33,7 @@ def to_html(fig, height):
     fig.update_layout(height=height, margin=dict(l=10, r=10, t=30, b=10), font=dict(family=FONT, color=GREY, size=12),
                       paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", hovermode="x unified",
                       legend=dict(orientation="h", x=0, y=-0.12, font=dict(color=INK)),
-                      hoverlabel=dict(bgcolor="#16181b", bordercolor=LINE, font=dict(color=INK, family=FONT)))
+                      hoverlabel=dict(bgcolor="#ffffff", bordercolor=LINE, font=dict(color=INK, family=FONT)))
     fig.update_xaxes(showgrid=False, zeroline=False, linecolor=LINE, color=GREY)
     fig.update_yaxes(gridcolor=GRID, zerolinecolor=BEIGE, color=GREY)
     return fig.to_html(full_html=False, include_plotlyjs=False, config=dict(displayModeBar=False, responsive=True))
@@ -94,42 +94,57 @@ def score(fc, actual):
     return s.assign(e_m=(s["actual"] - s["forecast"]).abs(), e_y=(s["actual"] - s["yesterday"]).abs())
 
 
-def record_tab(fc, actual, title, empty, note):
+def record_tab(live, backfill, actual):
+    """one track record: live days and backfilled days (marked *) scored together, files kept apart"""
+    fc = pd.concat([backfill.assign(kind="backfill"), live.assign(kind="live")], ignore_index=True)
+    title = "Track record"
     if fc.empty:
-        return card(title, f"<p>{empty}</p>")
+        return card(title, "<p>No forecast saved yet.</p>")
     s = score(fc, actual)
     if s.empty:
         return card(title, f"<p>From {fc['date'].min()}. The first day is scored once its auction flows are out.</p>")
     g = s.groupby("cable")[["e_m", "e_y"]].mean().reindex(list(CABLES))
-    t = pd.DataFrame({"Cable": [CABLES[c] for c in g.index], "Days": s.groupby("cable")["date"].nunique().reindex(g.index).values,
+    days = s.groupby("cable")["date"].nunique().reindex(g.index)
+    bdays = s[s["kind"] == "backfill"].groupby("cable")["date"].nunique().reindex(g.index).fillna(0).astype(int)
+    lv = s[s["kind"] == "live"].groupby("cable")[["e_m", "e_y"]].mean().reindex(g.index)
+    t = pd.DataFrame({"Cable": [CABLES[c] for c in g.index],
+                      "Days": [f"{d} ({b}*)" if b else str(d) for d, b in zip(days.values, bdays.values)],
                       "Error, model": g["e_m"].map(mw), "Error, same hour yesterday": g["e_y"].map(mw),
-                      "Model better by": ((1 - g["e_m"] / g["e_y"]) * 100).map(lambda v: "–" if pd.isna(v) else f"{v:.0f}%")})
-    daily = s.groupby(["date", "cable"])[["e_m", "e_y"]].mean().reset_index()
+                      "Model better by": ((1 - g["e_m"] / g["e_y"]) * 100).map(lambda v: "–" if pd.isna(v) else f"{v:.0f}%"),
+                      "Better by, live days only": ((1 - lv["e_m"] / lv["e_y"]) * 100).map(
+                          lambda v: "–" if pd.isna(v) else f"{v:.0f}%")})
+    daily = s.groupby(["date", "cable", "kind"])[["e_m", "e_y"]].mean().reset_index()
     fig = go.Figure()
     for c in CABLES:
         x = daily[daily["cable"] == c]
-        fig.add_trace(go.Scatter(x=x["date"], y=x["e_y"] - x["e_m"], name=CABLES[c], mode="lines+markers"))
+        fig.add_trace(go.Scatter(x=x["date"], y=x["e_y"] - x["e_m"], name=CABLES[c], mode="lines+markers",
+                                 marker=dict(symbol=["star-open" if k == "backfill" else "circle" for k in x["kind"]], size=8),
+                                 customdata=x["kind"], hovertemplate="%{x}: %{y:,.0f} MW (%{customdata})<extra>%{fullData.name}</extra>"))
     fig.add_hline(y=0, line=dict(color=BEIGE))
-    return (card(f"{title}, mean absolute error per hour, {s['date'].min()} to {s['date'].max()}", table(t, num=t.columns[1:]), note)
-            + card("Model's gain over yesterday per day", to_html(fig, 320), "MW. Above zero: the model was closer than the same hour yesterday."))
+    nb = s.loc[s["kind"] == "backfill", "date"].nunique()
+    star = (f"* {nb} of {s['date'].nunique()} days are backfilled: made afterwards, but only from what was published before "
+            "each auction and fit only on earlier days, exactly as the live run would have. They are kept in their own file, "
+            "forecasts/flow_backfill.csv. All other days were saved before the noon auction and never changed. "
+            "Only days with all 24 hours on every cable.") if nb else \
+        "Saved before the noon auction and never changed. Only days with all 24 hours on every cable."
+    return (card(f"{title}, mean absolute error per hour, {s['date'].min()} to {s['date'].max()}", table(t, num=t.columns[1:]), star)
+            + card("Model's gain over yesterday per day", to_html(fig, 320),
+                   "MW. Above zero: the model was closer than the same hour yesterday. Stars are backfilled days."))
 
 
 def record_summary(live, backfill, actual):
-    """two short lines for the map's side panel"""
+    """a few numbers for the map's side panel"""
     out = []
-    for fc, name in ((live, "Live"), (backfill, "Backfilled")):
-        if fc.empty:
-            out.append(f"<p>{name}: no days yet.</p>" if name == "Live" else "")
-            continue
-        s = score(fc, actual)
-        if s.empty:
-            out.append(f"<p>{name}: from {fc['date'].min()}, scored once the auction flows are out.</p>")
-            continue
+    fc = pd.concat([backfill.assign(kind="backfill"), live.assign(kind="live")], ignore_index=True)
+    s = score(fc, actual) if not fc.empty else fc
+    if not s.empty:
         m, y = s["e_m"].mean(), s["e_y"].mean()
-        out.append(f"<p>{name}, {s['date'].nunique()} days: off by {m:,.0f} MW per cable and hour, against {y:,.0f} MW "
-                   f"for the same hour yesterday ({(1 - m / y) * 100:+.0f}%).</p>".replace("(+", "(better by ").replace("(-", "(worse by "))
-    out.append("<p>Backtest, 186 days: better than yesterday on all cables but Sweden and the Great Belt; "
-               "only Germany passes the test (16%).</p>")
+        nb = s.loc[s["kind"] == "backfill", "date"].nunique()
+        tail = f", {nb} of them backfilled*" if nb else ""
+        out.append(f"<p><b>{m:,.0f} MW</b> over {s['date'].nunique()} days{tail}, against {y:,.0f} MW for the same hour yesterday</p>")
+    sc = pd.read_csv("results/model_scores.csv")
+    for _, r in sc[sc["beats_yesterday"]].iterrows():
+        out.append(f"<p><b>−{r['better_pct']:.0f}%</b> error on the cable to {CABLES[r['cable']]} in the backtest</p>")
     return "".join(out)
 
 
@@ -186,29 +201,28 @@ def render(tabs):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DK1 cable flow forecast</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="{PLOTLY_JS}"></script>
 <style>
-  body {{ margin: 0; color: {INK}; font: 15px/1.5 {FONT}; background: #0b0c0e; }}
-  header {{ padding: 8px 20px; border-bottom: 1px solid {LINE}; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; }}
+  body {{ margin: 0; color: {INK}; font: 15px/1.5 {FONT}; background: #f3f5f7; }}
+  header {{ background: #ffffff; padding: 8px 20px; border-bottom: 1px solid {LINE}; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; }}
   header h1 {{ font-size: 17px; font-weight: 600; margin: 10px 8px 10px 0; }}
   nav {{ display: flex; flex-wrap: wrap; gap: 2px; }}
   nav button {{ font: 500 14.5px {FONT}; color: {GREY}; background: none; border: 0; padding: 7px 15px; border-radius: 99px; cursor: pointer; }}
   nav button:hover {{ color: {INK}; }}
-  nav button.active {{ color: #0b0c0e; background: {INK}; }}
+  nav button.active {{ color: #ffffff; background: {INK}; }}
   header .links {{ margin-left: auto; font-size: 14px; display: flex; align-items: center; gap: 16px; }}
   header .links a {{ color: {GREY}; text-decoration: none; }}
   header .links svg {{ display: block; fill: {INK}; }}
-  header h1 {{ font-family: "Inter Tight", {FONT}; }}
   main {{ max-width: 1280px; margin: 0 auto; padding: 18px 16px 40px; }}
   section {{ display: none; }} section.active {{ display: block; }}
-  .card {{ border: 1px solid {LINE}; border-radius: 14px; padding: 16px 20px; margin-bottom: 18px; min-width: 0; }}
+  .card {{ background: #ffffff; border: 1px solid {LINE}; border-radius: 14px; padding: 16px 20px; margin-bottom: 18px; min-width: 0; }}
   .card-title {{ font-weight: 500; margin-bottom: 8px; }}
   table {{ border-collapse: collapse; width: 100%; font-size: 14px; }}
   th, td {{ text-align: left; padding: 7px 8px 7px 0; border-bottom: 1px solid {LINE}; }}
   th {{ color: {GREY}; font-weight: 500; font-size: 13px; }}
   .n {{ text-align: right; font-variant-numeric: tabular-nums; }}
-  p {{ color: #c9ccd2; max-width: 900px; }}
+  p {{ color: #33414e; max-width: 900px; }}
   .note {{ color: {GREY}; font-size: 13px; margin-bottom: 0; }}
   a {{ color: {ACCENT}; }}
   footer {{ color: {GREY}; font-size: 12px; text-align: center; padding-bottom: 24px; }}
@@ -275,83 +289,97 @@ def local(df, col="time_utc"):
 
 
 def map_data(live, backfill, actual):
+    import rebase
     now = pd.Timestamp.now(tz="Europe/Copenhagen")
     start = (now.normalize() - pd.Timedelta(days=7)).tz_localize(None)
-    m = measured(start.strftime("%Y-%m-%dT%H:%M"), now.tz_localize(None).strftime("%Y-%m-%dT%H:%M"))
-    fc = pd.concat([backfill.assign(kind="backfill"), live.assign(kind="live")])
-    fc = fc.drop_duplicates(["date", "hour", "cable"], keep="last")
-    fc["key"] = fc["date"].astype(str) + " " + fc["hour"].astype(int).map("{:02d}".format)
-    last = start + pd.Timedelta(days=8, hours=23)                            # through tomorrow
-    hours = [t.strftime("%Y-%m-%d %H") for t in pd.date_range(start, last, freq="h")]
+    hours = [t.strftime("%Y-%m-%d %H") for t in pd.date_range(start, start + pd.Timedelta(days=8, hours=23), freq="h")]
     idx = {h: i for i, h in enumerate(hours)}
     blank = lambda: [None] * len(hours)
 
-    gen = {a: {k: blank() for k in SOURCES.values()} for a in ("DK1", "DK2")}
-    ex = {c: blank() for m_ in EXCHANGES.values() for c in m_.values()}
-    last_measured = -1
+    # the region from the rebase grid api; the page still works for denmark if it fails
+    try:
+        R = rebase.region(hours)
+    except Exception as e:
+        print("rebase failed:", e)
+        R = {"zones": [{"id": s_, "name": n, "at": at} for s_, n, at in rebase.ZONES.values()],
+             "gen": {}, "load": {}, "price": {}, "flows": []}
+
+    # denmark's generation from energinet's real-time data: fresher, and split into wind, solar and thermal plants
+    m = measured(start.strftime("%Y-%m-%dT%H:%M"), now.tz_localize(None).strftime("%Y-%m-%dT%H:%M"))
+    detail = {a: {k: blank() for k in SOURCES.values()} for a in ("DK1", "DK2")}
     if not m.empty:
-        for _, r in m.iterrows():
-            i = idx.get(r["hour"].strftime("%Y-%m-%d %H"))
-            a = r["PriceArea"]
-            if i is None or a not in gen:
-                continue
-            for c, k in SOURCES.items():
-                if pd.notna(r[c]):
-                    gen[a][k][i] = round(float(r[c]))
-            for c, cab in EXCHANGES[a].items():
-                if pd.notna(r[c]):
-                    ex[cab][i] = round(-float(r[c]))
-            if pd.notna(r["OffshoreWindPower"]) and a == "DK1":
-                last_measured = max(last_measured, i)
-        # the current hour is still filling up; show the last complete one
         cur_key = now.strftime("%Y-%m-%d %H")
-        if last_measured >= 0 and hours[last_measured] == cur_key:
-            last_measured -= 1
-            for a in gen:
-                for k in gen[a]:
-                    gen[a][k][last_measured + 1] = None
-            for c in ex:
-                ex[c][last_measured + 1] = None
+        for _, r in m.iterrows():
+            k = r["hour"].strftime("%Y-%m-%d %H")
+            if k not in idx or k == cur_key or r["PriceArea"] not in detail:
+                continue
+            for c, name in SOURCES.items():
+                if pd.notna(r[c]):
+                    detail[r["PriceArea"]][name][idx[k]] = round(float(r[c]))
+        for a, d in detail.items():
+            g = {f: blank() for f in rebase.FUELS}
+            for i in range(len(hours)):
+                if d["offshore"][i] is None:
+                    continue
+                for f in rebase.FUELS:
+                    g[f][i] = 0
+                g["wind"][i] = (d["offshore"][i] or 0) + (d["onshore"][i] or 0)
+                g["solar"][i] = d["solar"][i] or 0
+                g["other"][i] = (d["large"][i] or 0) + (d["small"][i] or 0)
+            R["gen"][a] = g
 
-    auc = {c: blank() for c in CABLES}
-    if not actual.empty:
-        a = actual.assign(key=actual["date"] + " " + actual["hour"].astype(int).map("{:02d}".format))
-        for _, r in a[a["key"].isin(idx)].iterrows():
-            auc[r["cable"]][idx[r["key"]]] = round(float(r["actual"]))
-    fcs = {c: blank() for c in CABLES}
-    kind = blank()
-    for _, r in fc[fc["key"].isin(idx)].iterrows():
-        fcs[r["cable"]][idx[r["key"]]] = round(float(r["forecast"]))
-        kind[idx[r["key"]]] = r["kind"]
-
-    price = {}
+    # prices from our own entso-e download where the api has none
     p = Path("data/prices_hourly.csv")
     if p.exists():
         pr = local(pd.read_csv(p))
         pr = pr[pr["key"].isin(idx)].groupby(["zone", "key"])["price"].mean().reset_index()
         for z, g in pr.groupby("zone"):
-            price[z] = blank()
+            cur = R["price"].setdefault(z, blank())
             for _, r in g.iterrows():
-                price[z][idx[r["key"]]] = round(float(r["price"]), 1)
+                if cur[idx[r["key"]]] is None:
+                    cur[idx[r["key"]]] = round(float(r["price"]), 1)
 
-    def dk1_sum(src):
-        out = []
-        for i in range(len(hours)):
-            v = [src[c][i] for c in CABLES]
-            out.append(None if any(x is None for x in v) else sum(v))
-        return out
+    # dk1's cables: auction flows and our forecast, turned to each border's own direction
+    sign = {c: (1 if b.split(":")[1].split("~")[0] == "DK-DK1" else -1) for c, b in rebase.DK_CABLES.items()}
+    auc = {b: blank() for b in rebase.DK_CABLES.values()}
+    fcs = {b: blank() for b in rebase.DK_CABLES.values()}
+    kind = blank()
+    dk1_auc, dk1_fc = blank(), blank()
+    if not actual.empty:
+        a_ = actual.assign(key=actual["date"] + " " + actual["hour"].astype(int).map("{:02d}".format))
+        for _, r in a_[a_["key"].isin(idx)].iterrows():
+            auc[rebase.DK_CABLES[r["cable"]]][idx[r["key"]]] = round(sign[r["cable"]] * float(r["actual"]))
+    fc = pd.concat([backfill.assign(kind="backfill"), live.assign(kind="live")])
+    fc = fc.drop_duplicates(["date", "hour", "cable"], keep="last")
+    fc["key"] = fc["date"].astype(str) + " " + fc["hour"].astype(int).map("{:02d}".format)
+    for _, r in fc[fc["key"].isin(idx)].iterrows():
+        fcs[rebase.DK_CABLES[r["cable"]]][idx[r["key"]]] = round(sign[r["cable"]] * float(r["forecast"]))
+        kind[idx[r["key"]]] = r["kind"]
+    for i in range(len(hours)):
+        for src, out in ((auc, dk1_auc), (fcs, dk1_fc)):
+            v = [src[rebase.DK_CABLES[c]][i] for c in rebase.DK_CABLES]
+            if all(x is not None for x in v):
+                out[i] = sum(sign[c] * src[rebase.DK_CABLES[c]][i] for c in rebase.DK_CABLES)
 
-    # trim trailing hours with nothing at all
-    has = [i for i in range(len(hours)) if fcs["DK1-DE"][i] is not None or auc["DK1-DE"][i] is not None
-           or (price.get("DK1") and price["DK1"][i] is not None) or i <= last_measured]
-    n = (max(has) + 1) if has else len(hours)
+    # the latest hour most zones have generation for
+    def has(z, i):
+        g = R["gen"].get(z)
+        return bool(g) and any(g[f][i] is not None for f in g)
+    zs = [z["id"] for z in R["zones"]]
+    measured_hours = [i for i in range(len(hours)) if sum(has(z, i) for z in zs) >= max(1, 0.6 * len(zs))
+                      or (len(R["gen"]) <= 2 and has("DK1", i))]
+    last_measured = max(measured_hours) if measured_hours else -1
+
+    keep = [i for i in range(len(hours)) if i <= last_measured or kind[i] is not None or dk1_auc[i] is not None
+            or (R["price"].get("DK1") and R["price"]["DK1"][i] is not None)]
+    n = max(keep) + 1 if keep else len(hours)
     cut = lambda v: v[:n]
-    return {"hours": hours[:n], "last_measured": last_measured,
-            "gen": {a: {k: cut(v) for k, v in g.items()} for a, g in gen.items()},
-            "ex": {c: cut(v) for c, v in ex.items()}, "auc": {c: cut(v) for c, v in auc.items()},
-            "fc": {c: cut(v) for c, v in fcs.items()}, "fc_kind": cut(kind),
-            "price": {z: cut(v) for z, v in price.items()},
-            "dk1_auc": cut(dk1_sum(auc)), "dk1_fc": cut(dk1_sum(fcs)),
+    deep = lambda d: {k: (deep(v) if isinstance(v, dict) else cut(v)) for k, v in d.items()}
+    return {"hours": hours[:n], "last_measured": last_measured, "fuels": rebase.FUELS, "zones": R["zones"],
+            "gen": deep(R["gen"]), "load": deep(R["load"]), "price": deep(R["price"]),
+            "flows": [dict(f, v=cut(f["v"])) for f in R["flows"]], "dk_detail": deep(detail),
+            "cables": {c: b for c, b in rebase.DK_CABLES.items()}, "auc": deep(auc), "fc": deep(fcs),
+            "fc_kind": cut(kind), "dk1_auc": cut(dk1_auc), "dk1_fc": cut(dk1_fc),
             "record_html": record_summary(live, backfill, actual)}
 
 
@@ -370,17 +398,13 @@ def main():
     data = map_data(live, backfill, actual)
     page = Path("assets/map.html").read_text(encoding="utf-8")
     page = page.replace("__DATA__", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))
-    page = page.replace("__GEO__", Path("assets/countries.json").read_text(encoding="utf-8"))
     Path("site/index.html").write_text(page, encoding="utf-8")
-    tabs = {"Live record": record_tab(live, actual, "Live record", "No live forecast saved yet.",
-                                      "Saved before the noon auction and never changed. Only days with all 24 hours on every cable."),
-            "Backfilled": record_tab(backfill, actual, "Backfilled days", "No backfilled days.",
-                                     "Made afterwards, but only from what was published before each auction, and fit only on earlier "
-                                     "days, exactly as the live run would have. Kept apart from the live record."),
+    tabs = {"Track record": record_tab(live, backfill, actual),
             "Tomorrow": tomorrow_tab(live if not live.empty else backfill),
             "Backtest": backtest_tab(), "Method": method_tab()}
     Path("site/record.html").write_text(render(tabs), encoding="utf-8")
-    print("wrote site/index.html and site/record.html,", len(data["hours"]), "hours, last measured", data["last_measured"])
+    print("wrote site/index.html and site/record.html,", len(data["hours"]), "hours, last measured", data["last_measured"],
+          len(data["flows"]), "borders")
 
 
 if __name__ == "__main__":
