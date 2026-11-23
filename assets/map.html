@@ -35,7 +35,7 @@
   main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; padding: 20px 24px 8px; max-width: 1500px; margin: 0 auto; }
   .board { background: var(--card); border: 1px solid var(--line); border-radius: 14px; position: relative; height: calc(100vh - 110px); min-height: 560px; max-height: 860px; }
   #map { width: 100%; height: 100%; display: block; }
-  .key { position: absolute; left: 18px; bottom: 14px; display: flex; align-items: center; gap: 10px; font: 12px var(--mono); color: var(--muted); }
+  .key { position: absolute; left: 18px; right: 18px; bottom: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font: 12px var(--mono); color: var(--muted); }
   .key .ramp { width: 120px; height: 8px; border-radius: 4px; }
   aside { display: flex; flex-direction: column; gap: 20px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
@@ -49,6 +49,7 @@
   .pair b { display: block; font: 500 20px var(--mono); color: var(--ink); }
   .mix { display: flex; height: 12px; border-radius: 3px; overflow: hidden; margin: 18px 0 8px; gap: 2px; }
   .mix i { display: block; height: 100%; }
+  .mix.mini { display: inline-flex; width: 56px; height: 7px; margin: 0 8px 0 0; vertical-align: middle; border-radius: 2px; }
   .mix-key { display: flex; flex-wrap: wrap; gap: 2px 12px; font: 12px var(--mono); color: var(--muted); }
   .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
   .flows { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px 8px; align-items: baseline; font-size: 14px; }
@@ -99,7 +100,7 @@
 <main>
   <div class="board">
     <svg id="map" role="img" aria-label="Schematic of Northern Europe's price areas, coloured by price, with the power flowing between them"></svg>
-    <div class="key" aria-hidden="true"><span>0 €</span><div class="ramp" id="ramp"></div><span>250+ €/MWh</span><span style="margin-left:10px">› direction of flow, width = MW</span></div>
+    <div class="key" aria-hidden="true"><span>0 €</span><div class="ramp" id="ramp"></div><span>250+ €/MWh</span><span style="margin-left:10px">› direction · width = MW · colour = sending area's mix:</span><span id="fuelkey"></span></div>
   </div>
   <aside id="panel" aria-live="polite"></aside>
 </main>
@@ -129,6 +130,9 @@ const fmtMW = v => v == null ? "–" : Math.abs(v) >= 1000 ? (Math.abs(v) / 1000
 const fmtGW = v => v == null ? "–" : (v / 1000).toFixed(1) + " GW";
 const dayName = s => new Date(s.slice(0, 10) + "T12:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 const genOf = (z, i) => { const g = D.gen[z]; if (!g) return null; let s = 0, any = false; for (const f of FUELS) { const v = val(g[f], i); if (v != null) { s += v; any = true; } } return any ? s : null; };
+// share of each fuel in what an area makes this hour, largest first
+const mixOf = (z, i) => { const g = D.gen[z] || {}, parts = FUELS.map(f => [f, Math.max(0, val(g[f], i) || 0)]), tot = d3.sum(parts, q => q[1]);
+  return tot ? parts.filter(q => q[1] / tot > 0.01).map(q => [q[0], q[1] / tot]).sort((a, b) => b[1] - a[1]) : []; };
 const hasFc = i => Object.values(D.fc).some(a => val(a, i) != null);
 const hasAuc = i => Object.values(D.auc).some(a => val(a, i) != null);
 let cur = Math.max(0, D.last_measured), sel = "DK1", mode = "measured", chosen = false;
@@ -143,6 +147,7 @@ function flowValue(f, i) {
   }
   return { v: val(f.v, i), kind: "measured" };
 }
+document.getElementById("fuelkey").innerHTML = FUELS.map(f => `<span class="sw" style="background:${COL[f]};margin-left:8px"></span>${FUEL_NAMES[f]}`).join(" ");
 document.getElementById("ramp").style.background = `linear-gradient(90deg, ${price(0)}, ${price(125)}, ${price(250)})`;
 
 // ---------- map ----------
@@ -154,9 +159,9 @@ function drawMap() {
   svg.attr("viewBox", `0 0 ${w} ${h}`).selectAll("*").remove();
   const xs = Object.values(POS).map(p => p[0]), ys = Object.values(POS).map(p => p[1]);
   const spanX = d3.max(xs) - d3.min(xs), spanY = d3.max(ys) - d3.min(ys);
-  S = Math.min((w - 60) / (spanX + 0.75), (h - 70) / (spanY + 0.75));
+  S = Math.min((w - 60) / (spanX + 0.75), (h - 95) / (spanY + 0.75));
   T = S * 0.72;
-  OX = (w - (spanX * S + T)) / 2 - d3.min(xs) * S; OY = 22 + (h - 50 - (spanY * S + T)) / 2 - d3.min(ys) * S;
+  OX = (w - (spanX * S + T)) / 2 - d3.min(xs) * S; OY = 12 + (h - 75 - (spanY * S + T)) / 2 - d3.min(ys) * S;
   svg.append("g").attr("id", "pipes");
   svg.append("g").attr("id", "tiles");
   svg.append("g").attr("id", "labels");
@@ -167,16 +172,24 @@ function render() {
   if (!svg.select("#pipes").node()) return;
   const flows = D.flows.filter(f => POS[f.a] && POS[f.b]);
   const width = v => v == null ? 1.5 : 2 + Math.min(Math.abs(v), 3000) / 3000 * T * 0.32;
-  const pg = svg.select("#pipes").selectAll("g.p").data(flows, f => f.id).join(e => { const g = e.append("g").attr("class", "p"); g.append("line").attr("class", "pipe"); g.append("g").attr("class", "chevs"); return g; });
+  const pg = svg.select("#pipes").selectAll("g.p").data(flows, f => f.id).join(e => { const g = e.append("g").attr("class", "p"); g.append("line").attr("class", "pipe"); g.append("g").attr("class", "strands"); g.append("g").attr("class", "chevs"); return g; });
   const labels = [];
   pg.each(function (f) {
     const g = d3.select(this), { v, kind } = flowValue(f, cur);
     const mine = f.a === sel || f.b === sel, isFc = kind === "forecast" && v != null;
     let [x1, y1] = ctr(f.a), [x2, y2] = ctr(f.b);
     if (v != null && v < 0) [x1, y1, x2, y2] = [x2, y2, x1, y1];            // draw from where the power comes from
+    // the power is coloured by what the sending area makes, one strand per fuel
+    const from = v == null ? null : v >= 0 ? f.a : f.b, mix = isFc || !from ? [] : mixOf(from, cur), wv = width(v);
     const color = isFc ? css("--fc") : mine ? css("--sel") : css("--pipe");
     g.select(".pipe").attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2).attr("stroke", v == null ? "#e1e6eb" : color)
-      .attr("stroke-width", width(v)).attr("stroke-opacity", mine || isFc ? .9 : .45).attr("stroke-dasharray", isFc ? "7 5" : null);
+      .attr("stroke-width", wv).attr("stroke-opacity", mix.length ? 0 : mine || isFc ? .9 : .45).attr("stroke-dasharray", isFc ? "7 5" : null);
+    const nx = -(y2 - y1), ny = x2 - x1, nl = Math.hypot(nx, ny) || 1;
+    let o = -wv / 2;
+    g.select(".strands").selectAll("line").data(mix).join("line")
+      .each(function (q) { const w = q[1] * wv, c = o + w / 2; o += w; d3.select(this).attr("x1", x1 + nx / nl * c).attr("y1", y1 + ny / nl * c)
+        .attr("x2", x2 + nx / nl * c).attr("y2", y2 + ny / nl * c).attr("stroke-width", w + .3); })
+      .attr("stroke", q => COL[q[0]]).attr("stroke-opacity", mine ? .95 : .55);
     // chevrons pointing the way the power goes; more of them for more power
     const len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
     const n = v == null ? 0 : Math.max(1, Math.min(4, Math.round(Math.abs(v) / 700)));
@@ -238,7 +251,7 @@ function panel(i) {
      <div class="mix-key">${parts.sort((a, b) => b[1] - a[1]).map(q => `<span><span class="sw" style="background:${COL[q[0]]}"></span>${FUEL_NAMES[q[0]]} ${Math.round(100 * q[1] / g)}%</span>`).join("")}</div>` : "") + `</div>`;
   html += `<div class="card"><p class="label">${net == null ? "flows" : net >= 0 ? `sends out ${fmtMW(net)} net` : `takes in ${fmtMW(net)} net`}</p><div class="flows">` +
     (bs.length ? bs.map(b => `<span class="dir" style="color:${b.kind === "forecast" ? css("--fc") : css("--sel")}">${b.v >= 0 ? "→" : "←"}</span>
-      <span><button class="zbtn" data-z="${b.other}">${b.other}</button> <span style="color:var(--muted)">${Z[b.other].name}</span></span><span class="v">${fmtMW(b.v)}</span>` +
+      <span><button class="zbtn" data-z="${b.other}">${b.other}</button> <span style="color:var(--muted)">${Z[b.other].name}</span></span><span class="v">${fmtMW(b.v)}</span>` + (b.kind !== "forecast" ? (m => m.length ? `<span class="sub"><span class="mix mini">${m.map(q => `<i style="flex:${q[1]};background:${COL[q[0]]}"></i>`).join("")}</span>${Math.round(100 * m[0][1])}% ${FUEL_NAMES[m[0][0]]}${m[1] ? `, ${Math.round(100 * m[1][1])}% ${FUEL_NAMES[m[1][0]].split(" ")[0]}` : ""}</span>` : "")(mixOf(b.v >= 0 ? sel : b.other, i)) : "") +
       (CABLE_OF[b.f.id] && (b.auc != null || b.fc != null) ? `<span class="sub">${[
         b.kind !== "auction" && b.auc != null ? `auction ${b.auc >= 0 ? "→" : "←"}${fmtMW(b.auc)}` : "",
         b.kind !== "forecast" && b.fc != null ? `<b>forecast ${b.fc >= 0 ? "→" : "←"}${fmtMW(b.fc)}</b>` : "",
