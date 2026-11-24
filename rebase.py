@@ -21,7 +21,10 @@ ZONES = {
     "LV": ("LV", "Latvia", [25.0, 56.9]), "LT": ("LT", "Lithuania", [23.9, 55.3]),
     "GB": ("GB", "Britain", [-1.8, 53.3]),
 }
-FUELS = ["fossil", "nuclear", "solar", "hydro", "bio", "wind", "other"]
+# thermal: denmark's power plants, where the live data gives size but not fuel (coal, gas, wood and waste together)
+FUELS = ["fossil", "thermal", "nuclear", "solar", "hydro", "bio", "wind", "other"]
+DK_PLANTS = {"offshore_wind": "wind", "onshore_wind": "wind", "solar": "solar", "plants_ge_100mw": "thermal",
+             "plants_lt_100mw": "thermal"}
 DK_CABLES = {"DK1-DE": "border:DE-LU~DK-DK1", "DK1-NL": "border:DK-DK1~NL", "DK1-GB": "border:DK-DK1~GB",
              "DK1-NO2": "border:DK-DK1~NO-NO2", "DK1-SE3": "border:DK-DK1~SE-SE3", "DK1-DK2": "border:DK-DK1~DK-DK2"}
 
@@ -102,9 +105,11 @@ def region(hours):
     for z in ZONES:
         e = grid.call("GET", f"/entities/{z}")
         names = grid.call("GET", f"/entities/{z}/timeseries")["timeseries"]
-        prov = "bmrs" if z == "GB" else "entsoe"
-        gen = [t["name"] for t in names if t["provider"] == prov
-               and t["name"].startswith("production.realised_output.actual_generation_per_type.")]
+        # denmark: energinet's live plant data (entso-e's fuel split for dk is days late or empty)
+        prov = "bmrs" if z == "GB" else "energinet" if z.startswith("DK-") else "entsoe"
+        prefix = ("production.realised_output.production_per_plant_class." if prov == "energinet"
+                  else "production.realised_output.actual_generation_per_type.")
+        gen = [t["name"] for t in names if t["provider"] == prov and t["name"].startswith(prefix)]
         gen_names[z] = gen
         series += [{"entity": z, "name": n, "provider": prov} for n in gen]
         for n in ("consumption.realised_load.total_load", "price.day_ahead.day_ahead_auction_price"):
@@ -127,7 +132,8 @@ def region(hours):
             v = h.get((z, n))
             if not v or "consumption" in n:
                 continue
-            f = fuel(n.split(".")[-1])
+            kind = n.split(".")[-1]
+            f = DK_PLANTS.get(kind, "other") if "per_plant_class" in n else fuel(kind)
             for i, x in enumerate(v):
                 if x is not None:
                     g[f][i] = (g[f][i] or 0) + max(x, 0)

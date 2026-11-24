@@ -13,7 +13,7 @@
   :root {
     --paper: #f3f5f7; --card: #ffffff; --ink: #14202b; --muted: #5d6b78; --faint: #93a0ac; --line: #d5dbe1; --hair: #e6eaee;
     --pipe: #9aa6b2; --sel: #0f7c86; --fc: #c2700a;
-    --fossil: #cf5a3c; --nuclear: #9a64d6; --solar: #b08a10; --hydro: #2f5fc8; --bio: #2e9a63; --wind: #3aa0d2; --other: #8a949e;
+    --fossil: #cf5a3c; --thermal: #a8775a; --nuclear: #9a64d6; --solar: #b08a10; --hydro: #2f5fc8; --bio: #2e9a63; --wind: #3aa0d2; --other: #8a949e;
     --sans: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
   }
   * { box-sizing: border-box; }
@@ -116,7 +116,7 @@
 <script>
 const D = JSON.parse(document.getElementById("data").textContent);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const FUEL_NAMES = { fossil: "fossil", nuclear: "nuclear", solar: "solar", hydro: "hydro", bio: "bio and waste", wind: "wind", other: "other" };
+const FUEL_NAMES = { fossil: "fossil", thermal: "power plants", nuclear: "nuclear", solar: "solar", hydro: "hydro", bio: "bio and waste", wind: "wind", other: "other" };
 const FUELS = D.fuels, COL = Object.fromEntries(FUELS.map(f => [f, css("--" + f)]));
 const H = D.hours.length, Z = Object.fromEntries(D.zones.map(z => [z.id, z]));
 const CABLE_OF = Object.fromEntries(Object.entries(D.cables).map(([c, b]) => [b, c]));

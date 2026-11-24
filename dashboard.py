@@ -1,5 +1,5 @@
 # dashboard for the flow forecast, built from what the scripts save:
-#   site/index.html   map of denmark's cables, hour by hour: energinet's measured flows and generation (energi data service),
+#   site/index.html   map of northern europe hour by hour: measured flows, generation, load and prices (rebase grid api),
 #                     the auction flows and our forecast for dk1's cables, through tomorrow
 #   site/record.html  track record (backfilled days marked *), tomorrow, backtest and method
 #   python dashboard.py   (needs data/ from the actions cache for the auction flows and prices)
@@ -245,44 +245,6 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {{
 </html>"""
 
 
-EDS = "https://api.energidataservice.dk/dataset/"
-EXCHANGES = {"DK1": {"ExchangeGermany": "DK1-DE", "ExchangeNetherlands": "DK1-NL", "ExchangeGreatBritain": "DK1-GB",
-                     "ExchangeNorway": "DK1-NO2", "ExchangeSweden": "DK1-SE3", "ExchangeGreatBelt": "DK1-DK2"},
-             "DK2": {"ExchangeGermany": "DK2-DE", "ExchangeSweden": "DK2-SE4", "BornholmSE4": "BH-SE4"}}
-SOURCES = {"OnshoreWindPower": "onshore", "ProductionGe100MW": "large", "OffshoreWindPower": "offshore",
-           "SolarPower": "solar", "ProductionLt100MW": "small"}
-
-
-def eds(dataset, start, end):
-    """one energi data service dataset between two danish times; waits out the rate limit"""
-    import re
-    import time
-    import requests
-    for attempt in range(6):
-        r = requests.get(EDS + dataset, params={"start": start, "end": end, "limit": 0}, timeout=90)
-        if r.status_code == 429:
-            wait = re.search(r"(\d+) seconds", r.text)
-            time.sleep(int(wait.group(1)) + 2 if wait else 30)
-            continue
-        r.raise_for_status()
-        return pd.DataFrame(r.json()["records"])
-    raise RuntimeError(f"{dataset}: rate limited")
-
-
-def measured(start, end):
-    """energinet's real-time generation and cable flows, five-minute readings averaged to danish hours.
-    flows are turned to + = out of the danish side (energinet gives + = into the area)"""
-    try:
-        d = eds("ElectricityProdex5MinRealtime", start, end)
-    except Exception as e:                                   # the map still shows the forecast without it
-        print("energi data service failed:", e)
-        return pd.DataFrame()
-    d["hour"] = pd.to_datetime(d["Minutes5DK"]).dt.floor("h")
-    cols = list(SOURCES) + sorted({c for m in EXCHANGES.values() for c in m})
-    d[cols] = d[cols].apply(pd.to_numeric, errors="coerce")
-    return d.groupby(["PriceArea", "hour"])[cols].mean().reset_index()
-
-
 def local(df, col="time_utc"):
     t = pd.to_datetime(df[col], utc=True).dt.tz_convert("Europe/Copenhagen")
     return df.assign(key=t.dt.strftime("%Y-%m-%d %H"))
@@ -296,37 +258,14 @@ def map_data(live, backfill, actual):
     idx = {h: i for i, h in enumerate(hours)}
     blank = lambda: [None] * len(hours)
 
-    # the region from the rebase grid api; the page still works for denmark if it fails
+    # everything measured comes from the rebase grid api (denmark's plants via energinet's live data in it);
+    # only prices it lacks are filled from our own entso-e download, the same source rebase uses
     try:
         R = rebase.region(hours)
     except Exception as e:
         print("rebase failed:", e)
         R = {"zones": [{"id": s_, "name": n, "at": at} for s_, n, at in rebase.ZONES.values()],
              "gen": {}, "load": {}, "price": {}, "flows": []}
-
-    # denmark's generation from energinet's real-time data: fresher, and split into wind, solar and thermal plants
-    m = measured(start.strftime("%Y-%m-%dT%H:%M"), now.tz_localize(None).strftime("%Y-%m-%dT%H:%M"))
-    detail = {a: {k: blank() for k in SOURCES.values()} for a in ("DK1", "DK2")}
-    if not m.empty:
-        cur_key = now.strftime("%Y-%m-%d %H")
-        for _, r in m.iterrows():
-            k = r["hour"].strftime("%Y-%m-%d %H")
-            if k not in idx or k == cur_key or r["PriceArea"] not in detail:
-                continue
-            for c, name in SOURCES.items():
-                if pd.notna(r[c]):
-                    detail[r["PriceArea"]][name][idx[k]] = round(float(r[c]))
-        for a, d in detail.items():
-            g = {f: blank() for f in rebase.FUELS}
-            for i in range(len(hours)):
-                if d["offshore"][i] is None:
-                    continue
-                for f in rebase.FUELS:
-                    g[f][i] = 0
-                g["wind"][i] = (d["offshore"][i] or 0) + (d["onshore"][i] or 0)
-                g["solar"][i] = d["solar"][i] or 0
-                g["other"][i] = (d["large"][i] or 0) + (d["small"][i] or 0)
-            R["gen"][a] = g
 
     # prices from our own entso-e download where the api has none
     p = Path("data/prices_hourly.csv")
@@ -377,7 +316,7 @@ def map_data(live, backfill, actual):
     deep = lambda d: {k: (deep(v) if isinstance(v, dict) else cut(v)) for k, v in d.items()}
     return {"hours": hours[:n], "last_measured": last_measured, "fuels": rebase.FUELS, "zones": R["zones"],
             "gen": deep(R["gen"]), "load": deep(R["load"]), "price": deep(R["price"]),
-            "flows": [dict(f, v=cut(f["v"])) for f in R["flows"]], "dk_detail": deep(detail),
+            "flows": [dict(f, v=cut(f["v"])) for f in R["flows"]],
             "cables": {c: b for c, b in rebase.DK_CABLES.items()}, "auc": deep(auc), "fc": deep(fcs),
             "fc_kind": cut(kind), "dk1_auc": cut(dk1_auc), "dk1_fc": cut(dk1_fc),
             "record_html": record_summary(live, backfill, actual)}
