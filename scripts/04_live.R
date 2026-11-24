@@ -9,7 +9,9 @@ source("R/model.R")
 now <- with_tz(Sys.time(), "Europe/Copenhagen")
 tomorrow <- as_date(now) + 1
 out_file <- "forecasts/flow_live.csv"
-old <- if (file.exists(out_file)) read_csv(out_file, show_col_types = FALSE) else tibble(date = as_date(character()))
+# made_utc stays text, as it is written below
+old <- if (file.exists(out_file)) read_csv(out_file, col_types = cols(made_utc = col_character())) else
+  tibble(date = as_date(character()))
 if (tomorrow %in% as_date(old$date)) { message("flows for ", tomorrow, " already saved"); quit(status = 0) }
 if (hour(now) >= 12) { message("after 12:00: the auction has closed, nothing saved for ", tomorrow); quit(status = 0) }
 
